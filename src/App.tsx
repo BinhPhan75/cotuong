@@ -145,6 +145,12 @@ export default function App() {
           migrated = true;
         }
 
+        // Force enable board image by default to match original design
+        if (parsed.useBoardImage === false || parsed.useBoardImage === undefined) {
+          parsed.useBoardImage = true;
+          migrated = true;
+        }
+
         if (migrated) {
           localStorage.setItem('xiangqi_board_style_settings', JSON.stringify(parsed));
         }

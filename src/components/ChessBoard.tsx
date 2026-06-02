@@ -235,8 +235,16 @@ export default function ChessBoard({
     const filename = pieceFileNames[key] || 'tuongdo.png';
     const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/';
     
-    // Always use the GitHub raw URL directly as requested
-    const imageUrl = `${baseUrl}${filename}`;
+    // Check if the base URL points to the default GitHub repository of BinhPhan75
+    const isDefaultBaseUrl = !styleSettings.pieceImageUrlBase || 
+      styleSettings.pieceImageUrlBase.trim() === '' ||
+      styleSettings.pieceImageUrlBase.includes('raw.githubusercontent.com/BinhPhan75/cotuong') ||
+      styleSettings.pieceImageUrlBase.includes('raw.githubusercontent.com/BinhPhan75/QLNXT') ||
+      styleSettings.pieceImageUrlBase.includes('githubusercontent.com');
+
+    const localImg = localPieceImages[key];
+    // If it's default/GitHub-targeted, use the local bundled image asset which contains the exact pristine uploaded images, bypassing ISP block/CORS issues
+    const imageUrl = isDefaultBaseUrl ? localImg : `${baseUrl}${filename}`;
     const hasFailed = failedImages[imageUrl];
 
     if (hasFailed) {
@@ -305,11 +313,20 @@ export default function ChessBoard({
     );
   };
 
+  // Check if board image URL points to the default GitHub repository
+  const isDefaultBoardUrl = !styleSettings.boardImageUrl || 
+    styleSettings.boardImageUrl.trim() === '' ||
+    styleSettings.boardImageUrl.includes('raw.githubusercontent.com/BinhPhan75/cotuong') ||
+    styleSettings.boardImageUrl.includes('raw.githubusercontent.com/BinhPhan75/QLNXT') ||
+    styleSettings.boardImageUrl.includes('githubusercontent.com');
+
+  const boardImageUrlToUse = isDefaultBoardUrl ? bancotuong : styleSettings.boardImageUrl;
+
   return (
     <div 
       className="relative w-full aspect-[9/10] rounded-2xl shadow-2xl border-4 border-amber-800 selection:bg-transparent overflow-hidden"
       style={{
-        backgroundImage: styleSettings.useBoardImage ? `url(${styleSettings.boardImageUrl || bancotuong})` : 'none',
+        backgroundImage: styleSettings.useBoardImage ? `url(${boardImageUrlToUse})` : 'none',
         backgroundSize: '100% 100%',
         backgroundRepeat: 'no-repeat',
         backgroundColor: '#f7eedc'
