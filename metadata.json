@@ -1,0 +1,6 @@
+{
+  "name": "TikTok Live Interactive Xiangqi",
+  "description": "Hệ thống Game Cờ Tướng chạy trên nền tảng Web, kết nối trực tiếp tương tác và quà thưởng với livestream TikTok real-time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
