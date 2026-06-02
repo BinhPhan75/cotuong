@@ -8,6 +8,23 @@ import bancotuong from '../assets/bancotuong.png';
 // @ts-ignore
 import quancotuong from '../assets/quancotuong.png';
 
+const pieceFileNames: Record<string, string> = {
+  'black-K': 'tuongden.png',
+  'red-K': 'tuongdo.png',
+  'black-A': 'siden.png',
+  'red-A': 'sido.png',
+  'black-E': 'tuong1den.png',
+  'red-E': 'tuong1do.png',
+  'black-H': 'maden.png',
+  'red-H': 'mado.png',
+  'black-R': 'xeden.png',
+  'red-R': 'xedo.png',
+  'black-C': 'phaoden.png',
+  'red-C': 'phaodo.png',
+  'black-P': 'totden.png',
+  'red-P': 'totdo.png',
+};
+
 interface ChessBoardProps {
   board: ChessBoardState;
   turn: BoardColor;
@@ -34,6 +51,7 @@ export default function ChessBoard({
   styleSettings
 }: ChessBoardProps) {
   const [selectedPos, setSelectedPos] = useState<GridPosition | null>(null);
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   // Determine selectable and destination squares
   const selectedPiece = selectedPos ? board[selectedPos.r][selectedPos.c] : null;
@@ -122,6 +140,81 @@ export default function ChessBoard({
     right: `${styleSettings.paddingRight}px`,
   };
 
+  const renderCssPiece = (p: Piece, isSel: boolean) => {
+    return (
+      <div
+        className={`
+          relative w-[85%] aspect-square rounded-full flex flex-col items-center justify-center shadow-lg transform active:scale-95 transition-all duration-150
+          ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
+          ${p.color === 'red' 
+            ? 'bg-[#faf6f1] border-3 border-amber-600 text-red-600 shadow-red-900/10' 
+            : 'bg-[#faf6f1] border-3 border-neutral-700 text-stone-900 shadow-stone-900/20'}
+        `}
+      >
+        {/* Ring-inner accent */}
+        <div className={`absolute inset-[2px] rounded-full border border-dashed ${p.color === 'red' ? 'border-red-300' : 'border-stone-400'}`} />
+
+        {/* Chinese glyph label */}
+        <span className="text-xl md:text-2xl font-bold font-serif leading-none tracking-tight select-none">
+          {p.label}
+        </span>
+
+        {/* Vietnamese sub-label */}
+        <span 
+          className={`
+            text-[8px] md:text-[9px] -mt-0.5 leading-none font-medium select-none uppercase tracking-tighter
+            ${p.color === 'red' ? 'text-red-500' : 'text-stone-500'}
+          `}
+        >
+          {p.nameVi}
+        </span>
+
+        {/* Quick indicator if is King */}
+        {p.type === 'K' && (
+          <span className="absolute -top-1 -right-1 text-yellow-500">
+            <Sparkles className="w-3 h-3 fill-yellow-500" />
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const renderPieceIndividual = (p: Piece, isSel: boolean) => {
+    const key = `${p.color}-${p.type}`;
+    const filename = pieceFileNames[key] || 'tuongdo.png';
+    const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/';
+    const imageUrl = `${baseUrl}${filename}`;
+
+    const hasFailed = failedImages[imageUrl];
+    if (hasFailed) {
+      return renderCssPiece(p, isSel);
+    }
+
+    return (
+      <div
+        style={{
+          width: `${styleSettings.pieceScale}%`,
+          height: `${styleSettings.pieceScale}%`,
+        }}
+        className={`
+          relative rounded-full flex items-center justify-center transform active:scale-95 transition-all duration-150 aspect-square
+          ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
+        `}
+      >
+        <img
+          src={imageUrl}
+          referrerPolicy="no-referrer"
+          alt={p.nameVi}
+          className="w-full h-full object-contain pointer-events-none select-none"
+          onError={() => {
+            console.warn(`Failed to load individual piece image: ${imageUrl}. Falling back to CSS mode.`);
+            setFailedImages(prev => ({ ...prev, [imageUrl]: true }));
+          }}
+        />
+      </div>
+    );
+  };
+
   const renderPieceSprite = (p: Piece, isSel: boolean) => {
     const colIdx = styleSettings.spriteOrder[p.type] !== undefined ? styleSettings.spriteOrder[p.type] : 0;
     const rowIdx = p.color === 'red' ? styleSettings.redRow : styleSettings.blackRow;
@@ -161,15 +254,12 @@ export default function ChessBoard({
   return (
     <div 
       className="relative w-full aspect-[9/10] rounded-2xl shadow-2xl border-4 border-amber-800 selection:bg-transparent overflow-hidden"
-      style={
-        styleSettings.useBoardImage 
-          ? { 
-              backgroundImage: `url(${bancotuong})`, 
-              backgroundSize: '100% 100%', 
-              backgroundRepeat: 'no-repeat' 
-            } 
-          : { backgroundColor: '#f7eedc' }
-      }
+      style={{
+        backgroundImage: styleSettings.useBoardImage ? `url(${styleSettings.boardImageUrl || bancotuong})` : 'none',
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: '#f7eedc'
+      }}
     >
       
       {/* 🌫️ BLIND STATE OVERLAY */}
@@ -287,44 +377,16 @@ export default function ChessBoard({
 
                 {/* Chess Piece Render - conditional */}
                 {p && (
-                  styleSettings.useSpritePieces ? (
-                    renderPieceSprite(p, isSel)
-                  ) : (
-                    <div
-                      className={`
-                        relative w-[85%] aspect-square rounded-full flex flex-col items-center justify-center shadow-lg transform active:scale-95 transition-all duration-150
-                        ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
-                        ${p.color === 'red' 
-                          ? 'bg-[#faf6f1] border-3 border-amber-600 text-red-600 shadow-red-900/10' 
-                          : 'bg-[#faf6f1] border-3 border-neutral-700 text-stone-900 shadow-stone-900/20'}
-                      `}
-                    >
-                      {/* Ring-inner accent */}
-                      <div className={`absolute inset-[2px] rounded-full border border-dashed ${p.color === 'red' ? 'border-red-300' : 'border-stone-400'}`} />
-
-                      {/* Chinese glyph label */}
-                      <span className="text-xl md:text-2xl font-bold font-serif leading-none tracking-tight select-none">
-                        {p.label}
-                      </span>
-
-                      {/* Vietnamese sub-label */}
-                      <span 
-                        className={`
-                          text-[8px] md:text-[9px] -mt-0.5 leading-none font-medium select-none uppercase tracking-tighter
-                          ${p.color === 'red' ? 'text-red-500' : 'text-stone-500'}
-                        `}
-                      >
-                        {p.nameVi}
-                      </span>
-
-                      {/* Quick indicator if is King */}
-                      {p.type === 'K' && (
-                        <span className="absolute -top-1 -right-1 text-yellow-500">
-                          <Sparkles className="w-3 h-3 fill-yellow-500" />
-                        </span>
-                      )}
-                    </div>
-                  )
+                  (() => {
+                    const mode = styleSettings.pieceStyleMode || (styleSettings.useSpritePieces ? 'sprite' : 'css');
+                    if (mode === 'individual') {
+                      return renderPieceIndividual(p, isSel);
+                    } else if (mode === 'sprite') {
+                      return renderPieceSprite(p, isSel);
+                    } else {
+                      return renderCssPiece(p, isSel);
+                    }
+                  })()
                 )}
               </div>
             );

@@ -118,5 +118,8 @@ export interface BoardStyleSettings {
     C: number;
     P: number;
   };
+  pieceStyleMode?: 'css' | 'sprite' | 'individual';
+  pieceImageUrlBase?: string;
+  boardImageUrl?: string;
 }
 

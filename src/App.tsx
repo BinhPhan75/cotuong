@@ -46,8 +46,8 @@ export default function App() {
   const [showAesthetics, setShowAesthetics] = useState(false);
   const [boardStyleSettings, setBoardStyleSettings] = useState<BoardStyleSettings>({
     useBoardImage: true,
-    useSpritePieces: true,
-    showSvgGrid: false,
+    useSpritePieces: false,
+    showSvgGrid: true,
     paddingTop: 16,
     paddingBottom: 16,
     paddingLeft: 16,
@@ -65,7 +65,10 @@ export default function App() {
       R: 4,
       C: 5,
       P: 6
-    }
+    },
+    pieceStyleMode: 'individual',
+    pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/',
+    boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/bancotuong.png'
   });
 
   const updateBoardStyleSettings = (updater: (prev: BoardStyleSettings) => BoardStyleSettings) => {
@@ -611,7 +614,7 @@ export default function App() {
                   <div className="space-y-4 pt-2 border-t border-slate-800/80 animate-fade-in text-xs">
                     
                     {/* Checkboxes */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-sans">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-sans">
                       <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
                         <input
                           type="checkbox"
@@ -624,21 +627,113 @@ export default function App() {
                       <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
                         <input
                           type="checkbox"
-                          checked={boardStyleSettings.useSpritePieces}
-                          onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, useSpritePieces: e.target.checked }))}
-                          className="rounded text-emerald-500 bg-slate-950 border-slate-800 focus:ring-0"
-                        />
-                        <span>Sử dụng Sprite quân cờ</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
-                        <input
-                          type="checkbox"
                           checked={boardStyleSettings.showSvgGrid}
                           onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, showSvgGrid: e.target.checked }))}
                           className="rounded text-emerald-500 bg-slate-950 border-slate-800 focus:ring-0"
                         />
                         <span>Vẽ đè Lưới SVG hỗ trợ</span>
                       </label>
+                    </div>
+
+                    {/* Style Mode Selector */}
+                    <div className="p-3 bg-slate-950/45 rounded-xl border border-slate-800/40 space-y-2 font-sans">
+                      <span className="text-[10px] text-emerald-400 block font-semibold uppercase tracking-wider">
+                        🎭 PHONG CÁCH QUÂN CỜ (CHOOSE PIECE STYLE):
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateBoardStyleSettings(prev => ({
+                              ...prev,
+                              pieceStyleMode: 'individual',
+                              useSpritePieces: false
+                            }));
+                          }}
+                          className={`px-3 py-2 text-xs rounded transition-all font-medium ${
+                            (boardStyleSettings.pieceStyleMode || (boardStyleSettings.useSpritePieces ? 'sprite' : 'css')) === 'individual'
+                              ? 'bg-emerald-600 text-white shadow-md font-bold'
+                              : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+                          }`}
+                        >
+                          🟢 Từng quân cờ tách biệt (GitHub)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateBoardStyleSettings(prev => ({
+                              ...prev,
+                              pieceStyleMode: 'sprite',
+                              useSpritePieces: true
+                            }));
+                          }}
+                          className={`px-3 py-2 text-xs rounded transition-all font-medium ${
+                            (boardStyleSettings.pieceStyleMode || (boardStyleSettings.useSpritePieces ? 'sprite' : 'css')) === 'sprite'
+                              ? 'bg-emerald-600 text-white shadow-md font-bold'
+                              : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+                          }`}
+                        >
+                          🔵 Bảng ghép Sprite Sheet (Cũ)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateBoardStyleSettings(prev => ({
+                              ...prev,
+                              pieceStyleMode: 'css',
+                              useSpritePieces: false
+                            }));
+                          }}
+                          className={`px-3 py-2 text-xs rounded transition-all font-medium ${
+                            (boardStyleSettings.pieceStyleMode || (boardStyleSettings.useSpritePieces ? 'sprite' : 'css')) === 'css'
+                              ? 'bg-emerald-600 text-white shadow-md font-bold'
+                              : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+                          }`}
+                        >
+                          ⚪ Tròn phẳng & Viền CSS (Mặc định)
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* URL Configs for Custom Images */}
+                    <div className="grid grid-cols-1 gap-3 p-3 bg-slate-950/45 rounded-xl border border-slate-800/40 font-sans">
+                      {/* Chess Piece Base Path */}
+                      {((boardStyleSettings.pieceStyleMode || (boardStyleSettings.useSpritePieces ? 'sprite' : 'css')) === 'individual') && (
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">
+                            🔗 ĐỊA CHỈ THƯ MỤC CHỨA QUÂN CỜ (GITHUB / RAW URL):
+                          </label>
+                          <input
+                            type="text"
+                            value={boardStyleSettings.pieceImageUrlBase || ''}
+                            onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, pieceImageUrlBase: e.target.value }))}
+                            className="w-full text-xs bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200 focus:border-emerald-500 focus:outline-none placeholder-slate-600 font-mono"
+                            placeholder="https://raw.githubusercontent.com/.../assets/"
+                          />
+                          <span className="text-[10px] text-slate-500 block leading-normal mt-1">
+                            Ảnh quân sẽ tự động lấy từ URL ghép với tên file dạng <code className="text-slate-400 font-mono">maden.png</code>, <code className="text-slate-400 font-mono">mado.png</code>, ...
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Board Image URL */}
+                      {boardStyleSettings.useBoardImage && (
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">
+                            🖼️ ĐƯỜNG DẪN ẢNH BÀN CỜ (BOARD IMAGE URL GITHUB):
+                          </label>
+                          <input
+                            type="text"
+                            value={boardStyleSettings.boardImageUrl || ''}
+                            onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, boardImageUrl: e.target.value }))}
+                            className="w-full text-xs bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200 focus:border-emerald-500 focus:outline-none placeholder-slate-600 font-mono"
+                            placeholder="https://raw.githubusercontent.com/.../bancotuong.png"
+                          />
+                          <span className="text-[11px] text-slate-400 block leading-normal mt-1">
+                            Mặc định liên kết trực tiếp để tránh lỗi không hiển thị bàn cờ ở webgame! Mẹo: Có thể dùng <code className="bg-slate-950 px-1 py-0.5 rounded text-emerald-400">https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/bancotuong.png</code>
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Sliced Sprite view finder preview */}
@@ -936,8 +1031,8 @@ export default function App() {
                         onClick={() => {
                           updateBoardStyleSettings(() => ({
                             useBoardImage: true,
-                            useSpritePieces: true,
-                            showSvgGrid: false,
+                            useSpritePieces: false,
+                            showSvgGrid: true,
                             paddingTop: 16,
                             paddingBottom: 16,
                             paddingLeft: 16,
@@ -955,7 +1050,10 @@ export default function App() {
                               R: 4,
                               C: 5,
                               P: 6
-                            }
+                            },
+                            pieceStyleMode: 'individual',
+                            pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/',
+                            boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/bancotuong.png'
                           }));
                         }}
                         className="px-2.5 py-1 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded transition-colors font-medium font-mono"
