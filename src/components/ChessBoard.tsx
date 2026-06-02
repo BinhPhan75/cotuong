@@ -233,23 +233,43 @@ export default function ChessBoard({
   const renderPieceIndividual = (p: Piece, isSel: boolean) => {
     const key = `${p.color}-${p.type}`;
     const filename = pieceFileNames[key] || 'tuongdo.png';
-    const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/';
+    const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/QLNXT/main/src/assets/';
     
-    // Check if the base URL points to the default GitHub repository of BinhPhan75
-    const isDefaultBaseUrl = !styleSettings.pieceImageUrlBase || 
-      styleSettings.pieceImageUrlBase.trim() === '' ||
-      styleSettings.pieceImageUrlBase.includes('raw.githubusercontent.com/BinhPhan75/cotuong') ||
-      styleSettings.pieceImageUrlBase.includes('raw.githubusercontent.com/BinhPhan75/QLNXT') ||
-      styleSettings.pieceImageUrlBase.includes('githubusercontent.com');
-
-    const localImg = localPieceImages[key];
-    // If it's default/GitHub-targeted, use the local bundled image asset which contains the exact pristine uploaded images, bypassing ISP block/CORS issues
-    const imageUrl = isDefaultBaseUrl ? localImg : `${baseUrl}${filename}`;
+    // Attempt to load the raw GitHub URL directly as first priority
+    const imageUrl = `${baseUrl}${filename}`;
     const hasFailed = failedImages[imageUrl];
 
     if (hasFailed) {
-      // Fallback to CSS representation but do NOT show text (as requested: "bỏ chữ tên quân cờ chỉ để hình ảnh ở mỗi quân cờ thôi")
-      return renderCssPiece(p, isSel, true);
+      // Safe fallback: use the pre-bundled local copy if GitHub is blocked or fails
+      const localImg = localPieceImages[key];
+      const localHasFailed = failedImages[localImg];
+      if (localHasFailed) {
+        // Ultimate fallback to CSS representation with no text inside as requested
+        return renderCssPiece(p, isSel, true);
+      }
+      return (
+        <div
+          style={{
+            width: `${styleSettings.pieceScale}%`,
+            height: `${styleSettings.pieceScale}%`,
+          }}
+          className={`
+            relative rounded-full flex items-center justify-center transform active:scale-95 transition-all duration-150 aspect-square
+            ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
+          `}
+        >
+          <img
+            src={localImg}
+            referrerPolicy="no-referrer"
+            alt={p.nameVi}
+            className="w-full h-full object-contain pointer-events-none select-none"
+            onError={() => {
+              console.warn(`Failed to load backup local piece image: ${localImg}. Recording failure.`);
+              setFailedImages(prev => ({ ...prev, [localImg]: true }));
+            }}
+          />
+        </div>
+      );
     }
 
     return (
@@ -313,20 +333,18 @@ export default function ChessBoard({
     );
   };
 
-  // Check if board image URL points to the default GitHub repository
-  const isDefaultBoardUrl = !styleSettings.boardImageUrl || 
-    styleSettings.boardImageUrl.trim() === '' ||
-    styleSettings.boardImageUrl.includes('raw.githubusercontent.com/BinhPhan75/cotuong') ||
-    styleSettings.boardImageUrl.includes('raw.githubusercontent.com/BinhPhan75/QLNXT') ||
-    styleSettings.boardImageUrl.includes('githubusercontent.com');
-
-  const boardImageUrlToUse = isDefaultBoardUrl ? bancotuong : styleSettings.boardImageUrl;
+  // Prefer the direct boardImageUrl from settings (or fallback default raw.githubusercontent.com path)
+  const boardImageUrlToUse = styleSettings.boardImageUrl && styleSettings.boardImageUrl.trim() !== '' 
+    ? styleSettings.boardImageUrl.trim() 
+    : 'https://raw.githubusercontent.com/BinhPhan75/QLNXT/main/src/assets/bancotuong.png';
 
   return (
     <div 
       className="relative w-full aspect-[9/10] rounded-2xl shadow-2xl border-4 border-amber-800 selection:bg-transparent overflow-hidden"
       style={{
-        backgroundImage: styleSettings.useBoardImage ? `url(${boardImageUrlToUse})` : 'none',
+        backgroundImage: styleSettings.useBoardImage 
+          ? `url(${boardImageUrlToUse}), url(${bancotuong})` 
+          : 'none',
         backgroundSize: '100% 100%',
         backgroundRepeat: 'no-repeat',
         backgroundColor: '#f7eedc'
