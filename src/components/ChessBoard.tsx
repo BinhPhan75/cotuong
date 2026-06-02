@@ -8,6 +8,53 @@ import bancotuong from '../assets/bancotuong.png';
 // @ts-ignore
 import quancotuong from '../assets/quancotuong.png';
 
+// Import all 14 chess piece assets statically to ensure proper Vite bundling
+// @ts-ignore
+import maden from '../assets/maden.png';
+// @ts-ignore
+import mado from '../assets/mado.png';
+// @ts-ignore
+import phaoden from '../assets/phaoden.png';
+// @ts-ignore
+import phaodo from '../assets/phaodo.png';
+// @ts-ignore
+import siden from '../assets/siden.png';
+// @ts-ignore
+import sido from '../assets/sido.png';
+// @ts-ignore
+import totden from '../assets/totden.png';
+// @ts-ignore
+import totdo from '../assets/totdo.png';
+// @ts-ignore
+import tuong1den from '../assets/tuong1den.png';
+// @ts-ignore
+import tuong1do from '../assets/tuong1do.png';
+// @ts-ignore
+import tuongden from '../assets/tuongden.png';
+// @ts-ignore
+import tuongdo from '../assets/tuongdo.png';
+// @ts-ignore
+import xeden from '../assets/xeden.png';
+// @ts-ignore
+import xedo from '../assets/xedo.png';
+
+const localPieceImages: Record<string, string> = {
+  'black-K': tuongden,
+  'red-K': tuongdo,
+  'black-A': siden,
+  'red-A': sido,
+  'black-E': tuong1den,
+  'red-E': tuong1do,
+  'black-H': maden,
+  'red-H': mado,
+  'black-R': xeden,
+  'red-R': xedo,
+  'black-C': phaoden,
+  'red-C': phaodo,
+  'black-P': totden,
+  'red-P': totdo,
+};
+
 const pieceFileNames: Record<string, string> = {
   'black-K': 'tuongden.png',
   'red-K': 'tuongdo.png',
@@ -187,7 +234,14 @@ export default function ChessBoard({
     const key = `${p.color}-${p.type}`;
     const filename = pieceFileNames[key] || 'tuongdo.png';
     const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/';
-    const imageUrl = `${baseUrl}${filename}`;
+    
+    // Check if the user is using the default assets folders. If so, prefer the pre-bundled local files.
+    const isDefaultBaseUrl = !styleSettings.pieceImageUrlBase || 
+      styleSettings.pieceImageUrlBase.trim() === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/' ||
+      styleSettings.pieceImageUrlBase.trim() === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/';
+    
+    const localImg = localPieceImages[key];
+    const imageUrl = (isDefaultBaseUrl && localImg) ? localImg : `${baseUrl}${filename}`;
 
     const hasFailed = failedImages[imageUrl];
     if (hasFailed) {
