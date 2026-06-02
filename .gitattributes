@@ -1,0 +1,11 @@
+# Explicitly treat all image formats and binary assets as binary
+# This prevents Git from applying CRLF to LF line-ending translations,
+# which corrupts binary signatures (like PNG headers) and breaks the images.
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.svg text eol=lf
