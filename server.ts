@@ -333,7 +333,7 @@ app.post("/api/match/move", (req, res) => {
   const activeColor = state.turn;
   const activeUser = activeColor === 'red' ? redPlayer : blackPlayer;
 
-  if (activeUser.username !== username) {
+  if (!state.settings.freeMoveMode && activeUser.username !== username) {
     return res.status(400).json({ error: `Không phải lượt của bạn! Lượt hiện tại là phe ${activeColor === 'red' ? 'Đỏ' : 'Đen'} (${activeUser.nickname})` });
   }
 
@@ -342,7 +342,7 @@ app.post("/api/match/move", (req, res) => {
     return res.status(400).json({ error: "Không tìm thấy quân cờ ở vị trí xuất phát!" });
   }
 
-  if (piece.color !== activeColor) {
+  if (!state.settings.freeMoveMode && piece.color !== activeColor) {
     return res.status(400).json({ error: "Thao tác lỗi: Bạn chỉ được di chuyển quân cờ bên mình!" });
   }
 

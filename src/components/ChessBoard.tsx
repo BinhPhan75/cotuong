@@ -72,6 +72,18 @@ const pieceFileNames: Record<string, string> = {
   'red-P': 'totdo.png',
 };
 
+// Helper to dynamically auto-resolve standard non-raw GitHub URLs into Raw CDN URLs
+export function healGithubUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  let clean = url.trim();
+  if (clean.includes('github.com') && clean.includes('/blob/')) {
+    clean = clean
+      .replace('github.com', 'raw.githubusercontent.com')
+      .replace('/blob/', '/');
+  }
+  return clean;
+}
+
 interface ChessBoardProps {
   board: ChessBoardState;
   turn: BoardColor;
@@ -129,29 +141,44 @@ export default function ChessBoard({
 
     const clickedPiece = board[r][c];
 
-    // Case 1: Selecting our own piece
-    if (clickedPiece && (clickedPiece.color === turn || freeMoveMode)) {
-      // If we clicked on already selected, toggle it
-      if (selectedPos && selectedPos.r === r && selectedPos.c === c) {
-        setSelectedPos(null);
-      } else {
-        // Only allow select if they match the assigned player color OR freeMove state OR spectator debug
-        if (!currentUserColor || currentUserColor === clickedPiece.color || freeMoveMode) {
-          setSelectedPos({ r, c });
-        }
-      }
-      return;
-    }
-
-    // Case 2: Clicking target destination
+    // If we already have a selected piece
     if (selectedPos) {
+      // 1. If clicked the same piece, deselect it
+      if (selectedPos.r === r && selectedPos.c === c) {
+        setSelectedPos(null);
+        return;
+      }
+
+      // 2. If click is a valid move/capture, execute it!
       const isTargetValid = validTargets.some(t => t.r === r && t.c === c);
       if (isTargetValid) {
         onMove(selectedPos, { r, c });
         setSelectedPos(null);
-      } else {
-        // Clicked invalid target, reset selection
-        setSelectedPos(null);
+        return;
+      }
+
+      // 3. Otherwise, if they clicked another of their selector-capable pieces, switch selection directly!
+      if (clickedPiece) {
+        const isTurnMatch = clickedPiece.color === turn;
+        const isRoleMatch = !currentUserColor || currentUserColor === clickedPiece.color;
+
+        if (freeMoveMode || (isTurnMatch && isRoleMatch)) {
+          setSelectedPos({ r, c });
+          return;
+        }
+      }
+
+      // 4. Clicked somewhere completely invalid (empty space or opponent piece they can't move), clear selection
+      setSelectedPos(null);
+    } else {
+      // No active selection, try selecting a piece
+      if (clickedPiece) {
+        const isTurnMatch = clickedPiece.color === turn;
+        const isRoleMatch = !currentUserColor || currentUserColor === clickedPiece.color;
+
+        if (freeMoveMode || (isTurnMatch && isRoleMatch)) {
+          setSelectedPos({ r, c });
+        }
       }
     }
   };
@@ -233,7 +260,9 @@ export default function ChessBoard({
   const renderPieceIndividual = (p: Piece, isSel: boolean) => {
     const key = `${p.color}-${p.type}`;
     const filename = pieceFileNames[key] || 'tuongdo.png';
-    const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/';
+    const baseUrl = healGithubUrl(
+      styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/'
+    );
     
     // Attempt to load the raw GitHub URL directly as first priority
     const imageUrl = `${baseUrl}${filename}`;
@@ -254,7 +283,7 @@ export default function ChessBoard({
             height: `${styleSettings.pieceScale}%`,
           }}
           className={`
-            relative rounded-full overflow-hidden flex items-center justify-center transform active:scale-95 transition-all duration-150 aspect-square shadow-md border border-amber-950/20 bg-amber-50
+            relative rounded-full p-[2px] overflow-hidden flex items-center justify-center transform active:scale-95 transition-all duration-150 aspect-square shadow-md border-2 border-stone-800/10 bg-[#faf6f1] isolate
             ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
           `}
         >
@@ -262,7 +291,7 @@ export default function ChessBoard({
             src={localImg}
             referrerPolicy="no-referrer"
             alt={p.nameVi}
-            className="w-full h-full object-cover rounded-full pointer-events-none select-none"
+            className="w-full h-full object-contain rounded-full pointer-events-none select-none"
             onError={() => {
               console.warn(`Failed to load backup local piece image: ${localImg}. Recording failure.`);
               setFailedImages(prev => ({ ...prev, [localImg]: true }));
@@ -279,7 +308,7 @@ export default function ChessBoard({
           height: `${styleSettings.pieceScale}%`,
         }}
         className={`
-          relative rounded-full overflow-hidden flex items-center justify-center transform active:scale-95 transition-all duration-150 aspect-square shadow-md border border-amber-950/20 bg-amber-50
+          relative rounded-full p-[2px] overflow-hidden flex items-center justify-center transform active:scale-95 transition-all duration-150 aspect-square shadow-md border border-amber-950/20 bg-amber-50/80 isolate
           ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
         `}
       >
@@ -287,7 +316,7 @@ export default function ChessBoard({
           src={imageUrl}
           referrerPolicy="no-referrer"
           alt={p.nameVi}
-          className="w-full h-full object-cover rounded-full pointer-events-none select-none"
+          className="w-full h-full object-contain rounded-full pointer-events-none select-none"
           onError={() => {
             console.warn(`Failed to load piece image: ${imageUrl}. Recording failure.`);
             setFailedImages(prev => ({ ...prev, [imageUrl]: true }));
@@ -334,9 +363,11 @@ export default function ChessBoard({
   };
 
   // Prefer the direct boardImageUrl from settings (or fallback default raw.githubusercontent.com path)
-  const boardImageUrlToUse = styleSettings.boardImageUrl && styleSettings.boardImageUrl.trim() !== '' 
-    ? styleSettings.boardImageUrl.trim() 
-    : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png';
+  const boardImageUrlToUse = healGithubUrl(
+    styleSettings.boardImageUrl && styleSettings.boardImageUrl.trim() !== '' 
+      ? styleSettings.boardImageUrl.trim() 
+      : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png'
+  );
 
   return (
     <div 
