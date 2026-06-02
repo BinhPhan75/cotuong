@@ -55,6 +55,8 @@ export default function App() {
     pieceScale: 85,
     redRow: 0,
     blackRow: 1,
+    spriteWidthMultiplier: 700,
+    spriteRowHeightRatio: 150.5,
     spriteOrder: {
       K: 0,
       A: 1,
@@ -119,7 +121,8 @@ export default function App() {
     const savedStyles = localStorage.getItem('xiangqi_board_style_settings');
     if (savedStyles) {
       try {
-        setBoardStyleSettings(JSON.parse(savedStyles));
+        const parsed = JSON.parse(savedStyles);
+        setBoardStyleSettings(prev => ({ ...prev, ...parsed }));
       } catch (e) {
         console.error("Failed to parse saved board styles:", e);
       }
@@ -642,7 +645,7 @@ export default function App() {
                     {boardStyleSettings.useSpritePieces && (
                       <div className="space-y-2 p-2 bg-slate-950 rounded-xl border border-slate-850">
                         <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider font-sans">
-                          🔍 Xem thử 7 Cột x 2 Dòng từ quancotuong.png:
+                          🔍 Xem thử 7 Cột x 2 Dòng từ quancotuong.png (Không chứa tên chữ đi kèm):
                         </span>
                         <div className="grid grid-cols-7 gap-1 bg-slate-900/60 p-1.5 rounded-lg border border-slate-800/50">
                           {Array(7).fill(null).map((_, i) => (
@@ -650,24 +653,42 @@ export default function App() {
                               <span className="text-[8px] font-mono text-slate-500">Cột {i}</span>
                               {/* Red Piece Row 0 */}
                               <div
-                                style={{
-                                  backgroundImage: `url(${quancotuong})`,
-                                  backgroundSize: '700% 200%',
-                                  backgroundPosition: `${i === 0 ? '0%' : i === 6 ? '100%' : `${(i / 6) * 100}%`} 0%`
-                                }}
-                                className="w-8 h-8 rounded-full border border-stone-800 shadow"
+                                className="w-8 h-8 rounded-full border border-stone-800 shadow relative overflow-hidden flex items-center justify-center bg-slate-950"
                                 title={`Cột ${i}, Dòng 0 (Đỏ)`}
-                              />
+                              >
+                                <img
+                                  src={quancotuong}
+                                  referrerPolicy="no-referrer"
+                                  style={{
+                                    position: 'absolute',
+                                    width: `${boardStyleSettings.spriteWidthMultiplier ?? 700}%`,
+                                    maxWidth: 'none',
+                                    height: 'auto',
+                                    left: `-${i * 100}%`,
+                                    top: `-${0 * (boardStyleSettings.spriteRowHeightRatio ?? 150.5)}%`,
+                                  }}
+                                  className="pointer-events-none select-none"
+                                />
+                              </div>
                               {/* Black Piece Row 1 */}
                               <div
-                                style={{
-                                  backgroundImage: `url(${quancotuong})`,
-                                  backgroundSize: '700% 200%',
-                                  backgroundPosition: `${i === 0 ? '0%' : i === 6 ? '100%' : `${(i / 6) * 100}%`} 100%`
-                                }}
-                                className="w-8 h-8 rounded-full border border-stone-800 shadow"
+                                className="w-8 h-8 rounded-full border border-stone-800 shadow relative overflow-hidden flex items-center justify-center bg-slate-950"
                                 title={`Cột ${i}, Dòng 1 (Đen)`}
-                              />
+                              >
+                                <img
+                                  src={quancotuong}
+                                  referrerPolicy="no-referrer"
+                                  style={{
+                                    position: 'absolute',
+                                    width: `${boardStyleSettings.spriteWidthMultiplier ?? 700}%`,
+                                    maxWidth: 'none',
+                                    height: 'auto',
+                                    left: `-${i * 100}%`,
+                                    top: `-${1 * (boardStyleSettings.spriteRowHeightRatio ?? 150.5)}%`,
+                                  }}
+                                  className="pointer-events-none select-none"
+                                />
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -743,7 +764,7 @@ export default function App() {
                         </div>
 
                         {/* Piece Scale */}
-                        <div className="space-y-1 md:col-span-2">
+                        <div className="space-y-1">
                           <div className="flex justify-between font-mono text-[10px] text-slate-400">
                             <span>Kích thước quân cờ (Piece Scale)</span>
                             <span className="text-emerald-400 font-bold">{boardStyleSettings.pieceScale}%</span>
@@ -757,6 +778,44 @@ export default function App() {
                             className="w-full accent-emerald-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
                           />
                         </div>
+
+                        {/* Sprite Width Multiplier */}
+                        {boardStyleSettings.useSpritePieces && (
+                          <div className="space-y-1">
+                            <div className="flex justify-between font-mono text-[10px] text-slate-400">
+                              <span>Tỷ lệ Rộng Sprite (Width Multiplier)</span>
+                              <span className="text-emerald-400 font-bold">{boardStyleSettings.spriteWidthMultiplier ?? 700}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="600"
+                              max="850"
+                              step="5"
+                              value={boardStyleSettings.spriteWidthMultiplier ?? 700}
+                              onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, spriteWidthMultiplier: parseInt(e.target.value) }))}
+                              className="w-full accent-emerald-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                            />
+                          </div>
+                        )}
+
+                        {/* Sprite Row Height Ratio */}
+                        {boardStyleSettings.useSpritePieces && (
+                          <div className="space-y-1 md:col-span-2">
+                            <div className="flex justify-between font-mono text-[10px] text-slate-400">
+                              <span>Tỷ lệ Di chuyển Dòng (Row Height Ratio)</span>
+                              <span className="text-emerald-400 font-bold">{boardStyleSettings.spriteRowHeightRatio ?? 150.5}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="120"
+                              max="180"
+                              step="0.5"
+                              value={boardStyleSettings.spriteRowHeightRatio ?? 150.5}
+                              onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, spriteRowHeightRatio: parseFloat(e.target.value) }))}
+                              className="w-full accent-emerald-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -841,6 +900,8 @@ export default function App() {
                             pieceScale: 85,
                             redRow: 0,
                             blackRow: 1,
+                            spriteWidthMultiplier: 700,
+                            spriteRowHeightRatio: 150.5,
                             spriteOrder: {
                               K: 0,
                               A: 1,

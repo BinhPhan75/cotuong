@@ -107,6 +107,8 @@ export interface BoardStyleSettings {
   pieceScale: number;
   redRow: number;
   blackRow: number;
+  spriteWidthMultiplier: number;
+  spriteRowHeightRatio: number;
   spriteOrder: {
     K: number;
     A: number;

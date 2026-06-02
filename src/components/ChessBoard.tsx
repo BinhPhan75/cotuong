@@ -126,24 +126,35 @@ export default function ChessBoard({
     const colIdx = styleSettings.spriteOrder[p.type] !== undefined ? styleSettings.spriteOrder[p.type] : 0;
     const rowIdx = p.color === 'red' ? styleSettings.redRow : styleSettings.blackRow;
 
-    // Standard CSS position
-    const bgX = colIdx === 0 ? '0%' : colIdx === 6 ? '100%' : `${(colIdx / 6) * 100}%`;
-    const bgY = rowIdx === 0 ? '0%' : '100%';
+    const widthMult = styleSettings.spriteWidthMultiplier ?? 700;
+    const rowHeightRatio = styleSettings.spriteRowHeightRatio ?? 150.5;
 
     return (
       <div
         style={{
-          backgroundImage: `url(${quancotuong})`,
-          backgroundSize: '700% 200%',
-          backgroundPosition: `${bgX} ${bgY}`,
           width: `${styleSettings.pieceScale}%`,
           height: `${styleSettings.pieceScale}%`,
         }}
         className={`
-          relative rounded-full shadow-lg transform active:scale-95 transition-all duration-150 aspect-square
+          relative rounded-full shadow-lg overflow-hidden flex items-center justify-center transform active:scale-95 transition-all duration-150 aspect-square
           ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
         `}
-      />
+      >
+        <img
+          src={quancotuong}
+          referrerPolicy="no-referrer"
+          style={{
+            position: 'absolute',
+            width: `${widthMult}%`,
+            maxWidth: 'none',
+            height: 'auto',
+            left: `-${colIdx * 100}%`,
+            top: `-${rowIdx * rowHeightRatio}%`,
+          }}
+          alt={p.nameVi}
+          className="pointer-events-none select-none"
+        />
+      </div>
     );
   };
 
