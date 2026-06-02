@@ -1,7 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { GameState, GridPosition, BoardColor, QueueItem, LivePlayer, ChatMessage, LeaderboardEntry } from './types';
+import { GameState, GridPosition, BoardColor, QueueItem, LivePlayer, ChatMessage, LeaderboardEntry, BoardStyleSettings } from './types';
 import ChessBoard from './components/ChessBoard';
 import DanmakuChat, { FlyingDanmakuContainer } from './components/DanmakuChat';
+
+// @ts-ignore
+import quancotuong from './assets/quancotuong.png';
+
 import LiveQueue from './components/LiveQueue';
 import LiveSimulator from './components/LiveSimulator';
 import Leaderboard from './components/Leaderboard';
@@ -38,6 +42,38 @@ export default function App() {
   const [currentUserColor, setCurrentUserColor] = useState<BoardColor | null>(null);
   const [usernameInput, setUsernameInput] = useState('');
   const [isSelfVerified, setIsSelfVerified] = useState(false);
+
+  const [showAesthetics, setShowAesthetics] = useState(false);
+  const [boardStyleSettings, setBoardStyleSettings] = useState<BoardStyleSettings>({
+    useBoardImage: true,
+    useSpritePieces: true,
+    showSvgGrid: false,
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingLeft: 16,
+    paddingRight: 16,
+    pieceScale: 85,
+    redRow: 0,
+    blackRow: 1,
+    spriteOrder: {
+      K: 0,
+      A: 1,
+      E: 2,
+      H: 3,
+      R: 4,
+      C: 5,
+      P: 6
+    }
+  });
+
+  const updateBoardStyleSettings = (updater: (prev: BoardStyleSettings) => BoardStyleSettings) => {
+    setBoardStyleSettings(prev => {
+      const next = updater(prev);
+      localStorage.setItem('xiangqi_board_style_settings', JSON.stringify(next));
+      return next;
+    });
+  };
+
 
   // Core Game Sync States (Synchronized via Express SSE)
   const [gameState, setGameState] = useState<GameState>({
@@ -78,6 +114,16 @@ export default function App() {
       localStorage.setItem('tiktok_xiangqi_session', token);
     }
     setSessionToken(token);
+
+    // Load custom styles from localStorage
+    const savedStyles = localStorage.getItem('xiangqi_board_style_settings');
+    if (savedStyles) {
+      try {
+        setBoardStyleSettings(JSON.parse(savedStyles));
+      } catch (e) {
+        console.error("Failed to parse saved board styles:", e);
+      }
+    }
 
     fetchLeaderboard();
   }, []);
@@ -520,6 +566,7 @@ export default function App() {
                   isBlind={(currentUserColor === 'red' && gameState.isBlindActive.red) || (currentUserColor === 'black' && gameState.isBlindActive.black)}
                   freeMoveMode={gameState.settings.freeMoveMode}
                   timeLeft={activeColorPlayer?.timeLeft || 0}
+                  styleSettings={boardStyleSettings}
                 />
 
                 {gameState.winner && (
@@ -540,6 +587,277 @@ export default function App() {
                     <div className="mt-5 text-[11px] text-indigo-400 font-medium bg-indigo-950/40 border border-indigo-900/30 px-3.5 py-1.5 rounded-full animate-pulse">
                       Hệ thống tự động đổi người từ hàng chờ...
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 🎨 CẤU HÌNH GIAO DIỆN & CÂN CHỈNH BÀN CỜ / SPRITE */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAesthetics(!showAesthetics)}
+                  className="w-full flex items-center justify-between text-xs font-bold text-slate-300 uppercase tracking-wider hover:text-white transition-colors"
+                >
+                  <span className="flex items-center gap-1.5 text-emerald-400">
+                    🎨 Giao diện & Cân chỉnh Bàn cờ / Sprite
+                  </span>
+                  <span className="text-slate-400 font-mono text-xs">{showAesthetics ? '▼ THU GỌN' : '▲ MỞ RỘNG'}</span>
+                </button>
+
+                {showAesthetics && (
+                  <div className="space-y-4 pt-2 border-t border-slate-800/80 animate-fade-in text-xs">
+                    
+                    {/* Checkboxes */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-sans">
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+                        <input
+                          type="checkbox"
+                          checked={boardStyleSettings.useBoardImage}
+                          onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, useBoardImage: e.target.checked }))}
+                          className="rounded text-emerald-500 bg-slate-950 border-slate-800 focus:ring-0"
+                        />
+                        <span>Sử dụng Bàn cờ ảnh</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+                        <input
+                          type="checkbox"
+                          checked={boardStyleSettings.useSpritePieces}
+                          onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, useSpritePieces: e.target.checked }))}
+                          className="rounded text-emerald-500 bg-slate-950 border-slate-800 focus:ring-0"
+                        />
+                        <span>Sử dụng Sprite quân cờ</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+                        <input
+                          type="checkbox"
+                          checked={boardStyleSettings.showSvgGrid}
+                          onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, showSvgGrid: e.target.checked }))}
+                          className="rounded text-emerald-500 bg-slate-950 border-slate-800 focus:ring-0"
+                        />
+                        <span>Vẽ đè Lưới SVG hỗ trợ</span>
+                      </label>
+                    </div>
+
+                    {/* Sliced Sprite view finder preview */}
+                    {boardStyleSettings.useSpritePieces && (
+                      <div className="space-y-2 p-2 bg-slate-950 rounded-xl border border-slate-850">
+                        <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider font-sans">
+                          🔍 Xem thử 7 Cột x 2 Dòng từ quancotuong.png:
+                        </span>
+                        <div className="grid grid-cols-7 gap-1 bg-slate-900/60 p-1.5 rounded-lg border border-slate-800/50">
+                          {Array(7).fill(null).map((_, i) => (
+                            <div key={`col-prev-${i}`} className="flex flex-col items-center gap-1.5 py-1 bg-slate-950/60 rounded border border-slate-800/40">
+                              <span className="text-[8px] font-mono text-slate-500">Cột {i}</span>
+                              {/* Red Piece Row 0 */}
+                              <div
+                                style={{
+                                  backgroundImage: `url(${quancotuong})`,
+                                  backgroundSize: '700% 200%',
+                                  backgroundPosition: `${i === 0 ? '0%' : i === 6 ? '100%' : `${(i / 6) * 100}%`} 0%`
+                                }}
+                                className="w-8 h-8 rounded-full border border-stone-800 shadow"
+                                title={`Cột ${i}, Dòng 0 (Đỏ)`}
+                              />
+                              {/* Black Piece Row 1 */}
+                              <div
+                                style={{
+                                  backgroundImage: `url(${quancotuong})`,
+                                  backgroundSize: '700% 200%',
+                                  backgroundPosition: `${i === 0 ? '0%' : i === 6 ? '100%' : `${(i / 6) * 100}%`} 100%`
+                                }}
+                                className="w-8 h-8 rounded-full border border-stone-800 shadow"
+                                title={`Cột ${i}, Dòng 1 (Đen)`}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sliders for margin padding */}
+                    <div className="space-y-3 bg-slate-950/40 p-3 rounded-xl border border-slate-850">
+                      <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider font-sans">📏 CÂN CHỈNH KHOẢNG CÁCH KHUNG (PADDINGS):</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* Top */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between font-mono text-[10px] text-slate-400">
+                            <span>Lề Trên (Top)</span>
+                            <span className="text-emerald-400 font-bold">{boardStyleSettings.paddingTop}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="50"
+                            value={boardStyleSettings.paddingTop}
+                            onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, paddingTop: parseInt(e.target.value) }))}
+                            className="w-full accent-emerald-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                          />
+                        </div>
+
+                        {/* Bottom */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between font-mono text-[10px] text-slate-400">
+                            <span>Lề Dưới (Bottom)</span>
+                            <span className="text-emerald-400 font-bold">{boardStyleSettings.paddingBottom}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="50"
+                            value={boardStyleSettings.paddingBottom}
+                            onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, paddingBottom: parseInt(e.target.value) }))}
+                            className="w-full accent-emerald-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                          />
+                        </div>
+
+                        {/* Left */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between font-mono text-[10px] text-slate-400">
+                            <span>Lề Trái (Left)</span>
+                            <span className="text-emerald-400 font-bold">{boardStyleSettings.paddingLeft}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="50"
+                            value={boardStyleSettings.paddingLeft}
+                            onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, paddingLeft: parseInt(e.target.value) }))}
+                            className="w-full accent-emerald-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                          />
+                        </div>
+
+                        {/* Right */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between font-mono text-[10px] text-slate-400">
+                            <span>Lề Phải (Right)</span>
+                            <span className="text-emerald-400 font-bold">{boardStyleSettings.paddingRight}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="50"
+                            value={boardStyleSettings.paddingRight}
+                            onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, paddingRight: parseInt(e.target.value) }))}
+                            className="w-full accent-emerald-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                          />
+                        </div>
+
+                        {/* Piece Scale */}
+                        <div className="space-y-1 md:col-span-2">
+                          <div className="flex justify-between font-mono text-[10px] text-slate-400">
+                            <span>Kích thước quân cờ (Piece Scale)</span>
+                            <span className="text-emerald-400 font-bold">{boardStyleSettings.pieceScale}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="50"
+                            max="110"
+                            value={boardStyleSettings.pieceScale}
+                            onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, pieceScale: parseInt(e.target.value) }))}
+                            className="w-full accent-emerald-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mapping configurator for columns */}
+                    {boardStyleSettings.useSpritePieces && (
+                      <div className="space-y-3 bg-slate-950/40 p-3 rounded-xl border border-slate-850">
+                        <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider font-sans">🔄 ÁNH XẠ CỘT TRONG SPRITE (SPRITE COLUMNS):</span>
+                        
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 font-sans">
+                          {/* Row Indices configs */}
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-slate-500 block">Dòng Quân ĐỎ (Red Row)</label>
+                            <select
+                              value={boardStyleSettings.redRow}
+                              onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, redRow: parseInt(e.target.value) }))}
+                              className="w-full text-xs bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-300 focus:outline-none"
+                            >
+                              <option value="0">Dòng 0 (Đỏ chuẩn)</option>
+                              <option value="1">Dòng 1 (Đen chuẩn)</option>
+                            </select>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-slate-500 block">Dòng Quân ĐEN (Black Row)</label>
+                            <select
+                              value={boardStyleSettings.blackRow}
+                              onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, blackRow: parseInt(e.target.value) }))}
+                              className="w-full text-xs bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-300 focus:outline-none"
+                            >
+                              <option value="1">Dòng 1 (Đen chuẩn)</option>
+                              <option value="0">Dòng 0 (Đỏ chuẩn)</option>
+                            </select>
+                          </div>
+
+                          {[
+                            { key: 'K', label: 'Tướng (K)' },
+                            { key: 'A', label: 'Sĩ (A)' },
+                            { key: 'E', label: 'Tượng (E)' },
+                            { key: 'H', label: 'Mã (H)' },
+                            { key: 'R', label: 'Xe (R)' },
+                            { key: 'C', label: 'Pháo (C)' },
+                            { key: 'P', label: 'Tốt (P)' }
+                          ].map((item) => (
+                            <div key={`piece-map-${item.key}`} className="space-y-1">
+                              <label className="text-[10px] text-slate-400 block">{item.label}</label>
+                              <select
+                                value={(boardStyleSettings.spriteOrder as any)[item.key]}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value);
+                                  updateBoardStyleSettings(prev => ({
+                                    ...prev,
+                                    spriteOrder: {
+                                      ...prev.spriteOrder,
+                                      [item.key]: val
+                                    }
+                                  }));
+                                }}
+                                className="w-full text-xs bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-300 focus:outline-none"
+                              >
+                                {[0, 1, 2, 3, 4, 5, 6].map(num => (
+                                  <option key={num} value={num}>Cột {num}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateBoardStyleSettings(() => ({
+                            useBoardImage: true,
+                            useSpritePieces: true,
+                            showSvgGrid: false,
+                            paddingTop: 16,
+                            paddingBottom: 16,
+                            paddingLeft: 16,
+                            paddingRight: 16,
+                            pieceScale: 85,
+                            redRow: 0,
+                            blackRow: 1,
+                            spriteOrder: {
+                              K: 0,
+                              A: 1,
+                              E: 2,
+                              H: 3,
+                              R: 4,
+                              C: 5,
+                              P: 6
+                            }
+                          }));
+                        }}
+                        className="px-2.5 py-1 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded transition-colors font-medium font-mono"
+                      >
+                        Khôi phục Mặc định
+                      </button>
+                    </div>
+
                   </div>
                 )}
               </div>

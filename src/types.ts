@@ -95,3 +95,26 @@ export interface GameState {
     piece: Piece;
   } | null;
 }
+
+export interface BoardStyleSettings {
+  useBoardImage: boolean;
+  useSpritePieces: boolean;
+  showSvgGrid: boolean;
+  paddingTop: number;
+  paddingBottom: number;
+  paddingLeft: number;
+  paddingRight: number;
+  pieceScale: number;
+  redRow: number;
+  blackRow: number;
+  spriteOrder: {
+    K: number;
+    A: number;
+    E: number;
+    H: number;
+    R: number;
+    C: number;
+    P: number;
+  };
+}
+

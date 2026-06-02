@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import { ChessBoardState, GridPosition, Piece, BoardColor } from '../types';
+import { ChessBoardState, GridPosition, Piece, BoardColor, BoardStyleSettings } from '../types';
 import { isValidXiangqiMove } from '../utils/xiangqiRules';
 import { ShieldAlert, Sparkles } from 'lucide-react';
+
+// @ts-ignore
+import bancotuong from '../assets/bancotuong.png';
+// @ts-ignore
+import quancotuong from '../assets/quancotuong.png';
 
 interface ChessBoardProps {
   board: ChessBoardState;
@@ -13,6 +18,7 @@ interface ChessBoardProps {
   isBlind: boolean;
   freeMoveMode: boolean;
   timeLeft: number;
+  styleSettings: BoardStyleSettings;
 }
 
 export default function ChessBoard({
@@ -24,7 +30,8 @@ export default function ChessBoard({
   isLoading,
   isBlind,
   freeMoveMode,
-  timeLeft
+  timeLeft,
+  styleSettings
 }: ChessBoardProps) {
   const [selectedPos, setSelectedPos] = useState<GridPosition | null>(null);
 
@@ -100,8 +107,59 @@ export default function ChessBoard({
     return lastMove !== null && lastMove.to.r === r && lastMove.to.c === c;
   };
 
+  // Styled paddings
+  const boardPaddingStyle = {
+    paddingTop: `${styleSettings.paddingTop}px`,
+    paddingBottom: `${styleSettings.paddingBottom}px`,
+    paddingLeft: `${styleSettings.paddingLeft}px`,
+    paddingRight: `${styleSettings.paddingRight}px`,
+  };
+
+  const boardCanvasStyle = {
+    top: `${styleSettings.paddingTop}px`,
+    bottom: `${styleSettings.paddingBottom}px`,
+    left: `${styleSettings.paddingLeft}px`,
+    right: `${styleSettings.paddingRight}px`,
+  };
+
+  const renderPieceSprite = (p: Piece, isSel: boolean) => {
+    const colIdx = styleSettings.spriteOrder[p.type] !== undefined ? styleSettings.spriteOrder[p.type] : 0;
+    const rowIdx = p.color === 'red' ? styleSettings.redRow : styleSettings.blackRow;
+
+    // Standard CSS position
+    const bgX = colIdx === 0 ? '0%' : colIdx === 6 ? '100%' : `${(colIdx / 6) * 100}%`;
+    const bgY = rowIdx === 0 ? '0%' : '100%';
+
+    return (
+      <div
+        style={{
+          backgroundImage: `url(${quancotuong})`,
+          backgroundSize: '700% 200%',
+          backgroundPosition: `${bgX} ${bgY}`,
+          width: `${styleSettings.pieceScale}%`,
+          height: `${styleSettings.pieceScale}%`,
+        }}
+        className={`
+          relative rounded-full shadow-lg transform active:scale-95 transition-all duration-150 aspect-square
+          ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
+        `}
+      />
+    );
+  };
+
   return (
-    <div className="relative w-full aspect-[9/10] bg-[#f7eedc] rounded-2xl shadow-2xl p-4 border-4 border-amber-800 selection:bg-transparent overflow-hidden">
+    <div 
+      className="relative w-full aspect-[9/10] rounded-2xl shadow-2xl border-4 border-amber-800 selection:bg-transparent overflow-hidden"
+      style={
+        styleSettings.useBoardImage 
+          ? { 
+              backgroundImage: `url(${bancotuong})`, 
+              backgroundSize: '100% 100%', 
+              backgroundRepeat: 'no-repeat' 
+            } 
+          : { backgroundColor: '#f7eedc' }
+      }
+    >
       
       {/* 🌫️ BLIND STATE OVERLAY */}
       {isBlind && (
@@ -119,66 +177,72 @@ export default function ChessBoard({
         </div>
       )}
 
-      {/* Grid Canvas Lines Layer */}
-      <div className="absolute inset-4 pointer-events-none border-2 border-stone-800">
-        
-        {/* Draw chess rows and cols */}
-        {/* Horizontal Lines */}
-        {Array(10).fill(null).map((_, i) => (
-          <div 
-            key={`row-${i}`} 
-            className="absolute left-0 right-0 h-[1px] bg-stone-700/80" 
-            style={{ top: `${(i / 9) * 100}%` }}
-          />
-        ))}
-
-        {/* Vertical Lines (Divided by the center River) */}
-        {Array(9).fill(null).map((_, i) => (
-          <React.Fragment key={`col-frag-${i}`}>
-            {/* Top Grid (Rows 0 to 4) */}
+      {/* Grid Canvas Lines Layer (drawn on top of background image if enabled or if board image is off) */}
+      {(styleSettings.showSvgGrid || !styleSettings.useBoardImage) && (
+        <div 
+          className="absolute pointer-events-none border border-stone-800/60"
+          style={boardCanvasStyle}
+        >
+          {/* Draw chess rows and cols */}
+          {/* Horizontal Lines */}
+          {Array(10).fill(null).map((_, i) => (
             <div 
-              className="absolute bg-stone-700/80" 
-              style={{ 
-                left: `${(i / 8) * 100}%`, 
-                top: '0%', 
-                bottom: '55.55%', 
-                width: '1px' 
-              }}
+              key={`row-${i}`} 
+              className="absolute left-0 right-0 h-[1px] bg-stone-700/60" 
+              style={{ top: `${(i / 9) * 100}%` }}
             />
-            {/* Bottom Grid (Rows 5 to 9) */}
-            <div 
-              className="absolute bg-stone-700/80" 
-              style={{ 
-                left: `${(i / 8) * 100}%`, 
-                top: '44.44%', 
-                bottom: '0%', 
-                width: '1px' 
-              }}
-            />
-          </React.Fragment>
-        ))}
+          ))}
 
-        {/* Palaces (X Diagonals) */}
-        {/* Black Palace: row 0, col 3 to row 2, col 5 */}
-        <svg className="absolute inset-0 w-full h-full opacity-60">
-          {/* Top Palace */}
-          <line x1="37.5%" y1="0%" x2="62.5%" y2="22.22%" stroke="#444" strokeWidth="1.5" />
-          <line x1="62.5%" y1="0%" x2="37.5%" y2="22.22%" stroke="#444" strokeWidth="1.5" />
-          
-          {/* Bottom Palace */}
-          <line x1="37.5%" y1="77.77%" x2="62.5%" y2="100%" stroke="#444" strokeWidth="1.5" />
-          <line x1="62.5%" y1="77.77%" x2="37.5%" y2="100%" stroke="#444" strokeWidth="1.5" />
-        </svg>
+          {/* Vertical Lines (Divided by the center River) */}
+          {Array(9).fill(null).map((_, i) => (
+            <React.Fragment key={`col-frag-${i}`}>
+              {/* Top Grid (Rows 0 to 4) */}
+              <div 
+                className="absolute bg-stone-700/60" 
+                style={{ 
+                  left: `${(i / 8) * 100}%`, 
+                  top: '0%', 
+                  bottom: '55.55%', 
+                  width: '1px' 
+                }}
+              />
+              {/* Bottom Grid (Rows 5 to 9) */}
+              <div 
+                className="absolute bg-stone-700/60" 
+                style={{ 
+                  left: `${(i / 8) * 100}%`, 
+                  top: '44.44%', 
+                  bottom: '0%', 
+                  width: '1px' 
+                }}
+              />
+            </React.Fragment>
+          ))}
 
-        {/* River Label */}
-        <div className="absolute top-[44.44%] bottom-[55.55%] left-[2%] right-[2%] flex items-center justify-between px-12 z-0 font-sans text-stone-700 font-semibold text-xs md:text-sm tracking-widest pointer-events-none uppercase">
-          <span> Sở Hà - 楚河</span>
-          <span> Hán Giới - 漢界</span>
+          {/* Palaces (X Diagonals) */}
+          <svg className="absolute inset-0 w-full h-full opacity-50">
+            {/* Top Palace */}
+            <line x1="37.5%" y1="0%" x2="62.5%" y2="22.22%" stroke="#444" strokeWidth="1.2" />
+            <line x1="62.5%" y1="0%" x2="37.5%" y2="22.22%" stroke="#444" strokeWidth="1.2" />
+            
+            {/* Bottom Palace */}
+            <line x1="37.5%" y1="77.77%" x2="62.5%" y2="100%" stroke="#444" strokeWidth="1.2" />
+            <line x1="62.5%" y1="77.77%" x2="37.5%" y2="100%" stroke="#444" strokeWidth="1.2" />
+          </svg>
+
+          {/* River Label */}
+          <div className="absolute top-[44.44%] bottom-[55.55%] left-[2%] right-[2%] flex items-center justify-between px-12 z-0 font-sans text-stone-700/60 font-semibold text-xs md:text-sm tracking-widest pointer-events-none uppercase">
+            <span> Sở Hà - 楚河</span>
+            <span> Hán Giới - 漢界</span>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Interactive Cells and Pieces Grid */}
-      <div className="relative w-full h-full grid grid-cols-9 grid-rows-10 z-10">
+      {/* Interactive Cells and Pieces Grid - styled with local custom padding */}
+      <div 
+        className="relative w-full h-full grid grid-cols-9 grid-rows-10 z-10"
+        style={boardPaddingStyle}
+      >
         {Array(10).fill(null).map((_, r) => (
           Array(9).fill(null).map((_, c) => {
             const p = board[r][c];
@@ -199,7 +263,7 @@ export default function ChessBoard({
                   <div className="absolute w-8 h-8 rounded-full border-2 border-dashed border-sky-400 bg-sky-200/20 animate-pulse pointer-events-none" />
                 )}
                 {isDestMove && (
-                  <div className="absolute w-9 h-9 rounded-full border-2 border-stone-800 bg-amber-500/10 pointer-events-none" />
+                  <div className="absolute w-10 h-10 rounded-full border-2 border-dashed border-amber-500 bg-amber-500/10 pointer-events-none" />
                 )}
 
                 {/* Valid Destination Indicator */}
@@ -210,42 +274,46 @@ export default function ChessBoard({
                   <div className="absolute w-3 h-3 rounded-full bg-emerald-500 shadow-sm border border-white" />
                 )}
 
-                {/* Chess Piece Render */}
+                {/* Chess Piece Render - conditional */}
                 {p && (
-                  <div
-                    className={`
-                      relative w-[85%] aspect-square rounded-full flex flex-col items-center justify-center shadow-lg transform active:scale-95 transition-all duration-150
-                      ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
-                      ${p.color === 'red' 
-                        ? 'bg-[#faf6f1] border-3 border-amber-600 text-red-600 shadow-red-900/10' 
-                        : 'bg-[#faf6f1] border-3 border-neutral-700 text-stone-900 shadow-stone-900/20'}
-                    `}
-                  >
-                    {/* Ring-inner accent */}
-                    <div className={`absolute inset-[2px] rounded-full border border-dashed ${p.color === 'red' ? 'border-red-300' : 'border-stone-400'}`} />
-
-                    {/* Chinese glyph label */}
-                    <span className="text-xl md:text-2xl font-bold font-serif leading-none tracking-tight select-none">
-                      {p.label}
-                    </span>
-
-                    {/* Vietnamese sub-label */}
-                    <span 
+                  styleSettings.useSpritePieces ? (
+                    renderPieceSprite(p, isSel)
+                  ) : (
+                    <div
                       className={`
-                        text-[8px] md:text-[9px] -mt-0.5 leading-none font-medium select-none uppercase tracking-tighter
-                        ${p.color === 'red' ? 'text-red-500' : 'text-stone-500'}
+                        relative w-[85%] aspect-square rounded-full flex flex-col items-center justify-center shadow-lg transform active:scale-95 transition-all duration-150
+                        ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
+                        ${p.color === 'red' 
+                          ? 'bg-[#faf6f1] border-3 border-amber-600 text-red-600 shadow-red-900/10' 
+                          : 'bg-[#faf6f1] border-3 border-neutral-700 text-stone-900 shadow-stone-900/20'}
                       `}
                     >
-                      {p.nameVi}
-                    </span>
+                      {/* Ring-inner accent */}
+                      <div className={`absolute inset-[2px] rounded-full border border-dashed ${p.color === 'red' ? 'border-red-300' : 'border-stone-400'}`} />
 
-                    {/* Quick indicator if is King */}
-                    {p.type === 'K' && (
-                      <span className="absolute -top-1 -right-1 text-yellow-500">
-                        <Sparkles className="w-3 h-3 fill-yellow-500" />
+                      {/* Chinese glyph label */}
+                      <span className="text-xl md:text-2xl font-bold font-serif leading-none tracking-tight select-none">
+                        {p.label}
                       </span>
-                    )}
-                  </div>
+
+                      {/* Vietnamese sub-label */}
+                      <span 
+                        className={`
+                          text-[8px] md:text-[9px] -mt-0.5 leading-none font-medium select-none uppercase tracking-tighter
+                          ${p.color === 'red' ? 'text-red-500' : 'text-stone-500'}
+                        `}
+                      >
+                        {p.nameVi}
+                      </span>
+
+                      {/* Quick indicator if is King */}
+                      {p.type === 'K' && (
+                        <span className="absolute -top-1 -right-1 text-yellow-500">
+                          <Sparkles className="w-3 h-3 fill-yellow-500" />
+                        </span>
+                      )}
+                    </div>
+                  )
                 )}
               </div>
             );
