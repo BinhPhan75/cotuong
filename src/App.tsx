@@ -67,7 +67,7 @@ export default function App() {
       C: 5,
       P: 6
     },
-    pieceStyleMode: 'css',
+    pieceStyleMode: 'individual',
     pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/',
     boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png'
   });
@@ -136,17 +136,6 @@ export default function App() {
         }
         if (parsed.boardImageUrl && parsed.boardImageUrl.includes('/main/assets/')) {
           parsed.boardImageUrl = parsed.boardImageUrl.replace('/main/assets/', '/main/src/assets/');
-          migrated = true;
-        }
-
-        // Automatic fallback/migration from 'individual' to 'css' if they are on default url to avoid 1x1 transparent placeholder bugs
-        const isUrlDefault = !parsed.pieceImageUrlBase || 
-          parsed.pieceImageUrlBase.trim() === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/' ||
-          parsed.pieceImageUrlBase.trim() === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/';
-
-        if (parsed.pieceStyleMode === 'individual' && isUrlDefault) {
-          parsed.pieceStyleMode = 'css';
-          parsed.useSpritePieces = false;
           migrated = true;
         }
 

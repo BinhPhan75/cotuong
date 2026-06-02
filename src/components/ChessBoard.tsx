@@ -235,12 +235,22 @@ export default function ChessBoard({
     const filename = pieceFileNames[key] || 'tuongdo.png';
     const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/';
     
-    // Attempt to load the piece image from the configured base directory URL
-    const imageUrl = `${baseUrl}${filename}`;
+    // Check if the user is using the default assets folders. If so, prefer the pre-bundled local files.
+    const isDefaultBaseUrl = !styleSettings.pieceImageUrlBase || 
+      styleSettings.pieceImageUrlBase.trim() === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/' ||
+      styleSettings.pieceImageUrlBase.trim() === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/';
+    
+    const localImg = localPieceImages[key];
+    const imageUrl = (isDefaultBaseUrl && localImg) ? localImg : `${baseUrl}${filename}`;
 
     const hasFailed = failedImages[imageUrl];
-    if (hasFailed) {
-      return renderCssPiece(p, isSel, false); // Keep Chinese & Vietnamese text visible on fallback!
+    // If the main URL failed, try using the local bundle as the ultimate backup URL
+    const ultimateUrl = (hasFailed && imageUrl !== localImg) ? localImg : imageUrl;
+
+    const ultimateFailed = failedImages[ultimateUrl];
+    if (ultimateFailed) {
+      // Fallback to CSS representation but do NOT show text (as requested: "bỏ chữ tên quân cờ chỉ để hình ảnh ở mỗi quân cờ thôi")
+      return renderCssPiece(p, isSel, true);
     }
 
     return (
@@ -255,13 +265,13 @@ export default function ChessBoard({
         `}
       >
         <img
-          src={imageUrl}
+          src={ultimateUrl}
           referrerPolicy="no-referrer"
           alt={p.nameVi}
           className="w-full h-full object-contain pointer-events-none select-none"
           onError={() => {
-            console.warn(`Failed to load individual piece image: ${imageUrl}. Falling back to CSS mode.`);
-            setFailedImages(prev => ({ ...prev, [imageUrl]: true }));
+            console.warn(`Failed to load piece image: ${ultimateUrl}. Recording failure.`);
+            setFailedImages(prev => ({ ...prev, [ultimateUrl]: true }));
           }}
         />
       </div>
