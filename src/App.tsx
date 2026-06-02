@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GameState, GridPosition, BoardColor, QueueItem, LivePlayer, ChatMessage, LeaderboardEntry, BoardStyleSettings } from './types';
 import ChessBoard from './components/ChessBoard';
+import { createInitialBoard } from './utils/xiangqiRules';
 import DanmakuChat, { FlyingDanmakuContainer } from './components/DanmakuChat';
 
 // @ts-ignore
@@ -66,7 +67,7 @@ export default function App() {
       C: 5,
       P: 6
     },
-    pieceStyleMode: 'individual',
+    pieceStyleMode: 'css',
     pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/',
     boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png'
   });
@@ -82,7 +83,7 @@ export default function App() {
 
   // Core Game Sync States (Synchronized via Express SSE)
   const [gameState, setGameState] = useState<GameState>({
-    board: Array(10).fill(null).map(() => Array(9).fill(null)),
+    board: createInitialBoard(),
     turn: 'red',
     activePlayers: { red: null, black: null },
     winner: null,
@@ -99,6 +100,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [sseConnected, setSseConnected] = useState(false);
+  const [pollingConnected, setPollingConnected] = useState(false);
+  const isSynced = sseConnected || pollingConnected;
 
   // Form states for Admin start-match selects
   const [adminSelectRed, setAdminSelectRed] = useState('');
@@ -135,6 +138,18 @@ export default function App() {
           parsed.boardImageUrl = parsed.boardImageUrl.replace('/main/assets/', '/main/src/assets/');
           migrated = true;
         }
+
+        // Automatic fallback/migration from 'individual' to 'css' if they are on default url to avoid 1x1 transparent placeholder bugs
+        const isUrlDefault = !parsed.pieceImageUrlBase || 
+          parsed.pieceImageUrlBase.trim() === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/' ||
+          parsed.pieceImageUrlBase.trim() === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/';
+
+        if (parsed.pieceStyleMode === 'individual' && isUrlDefault) {
+          parsed.pieceStyleMode = 'css';
+          parsed.useSpritePieces = false;
+          migrated = true;
+        }
+
         if (migrated) {
           localStorage.setItem('xiangqi_board_style_settings', JSON.stringify(parsed));
         }
@@ -183,6 +198,42 @@ export default function App() {
     };
   }, []);
 
+  // 3. Fallback Periodic Polling for serverless hosting like Vercel (or when SSE connection is blocked)
+  useEffect(() => {
+    let intervalId: any = null;
+
+    const pollState = async () => {
+      // Only invoke fetch if SSE is not active
+      if (!sseConnected) {
+        try {
+          const res = await fetch('/api/state');
+          if (res.ok) {
+            const freshState = (await res.json()) as GameState;
+            setGameState(freshState);
+            setPollingConnected(true);
+            setApiError(null);
+          } else {
+            setPollingConnected(false);
+          }
+        } catch (err) {
+          console.warn("State polling failed (intended fallback during SSE downtime):", err);
+          setPollingConnected(false);
+        }
+      } else {
+        setPollingConnected(false);
+      }
+    };
+
+    // Run poll every 2.5 seconds
+    intervalId = setInterval(pollState, 2500);
+    // Run once immediately to retrieve state faster if SSE starts off disconnected
+    pollState();
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [sseConnected]);
+
   // Pull leaderboard statistics manually
   const fetchLeaderboard = async () => {
     try {
@@ -211,7 +262,7 @@ export default function App() {
 
   // Core actions to send moves
   const handleMakeMove = async (from: GridPosition, to: GridPosition) => {
-    if (!sseConnected) {
+    if (!isSynced) {
       triggerError("Đang mất kết nối real-time. Vui lòng đợi!");
       return;
     }
@@ -421,10 +472,12 @@ export default function App() {
                 <span className="bg-rose-500/10 text-rose-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-rose-500/20 uppercase tracking-widest flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" /> Real-time
                 </span>
-                {sseConnected ? (
-                  <span className="bg-emerald-500/10 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">LIVE</span>
+                {isSynced ? (
+                  <span className="bg-emerald-500/10 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20 uppercase tracking-widest">
+                    {sseConnected ? 'LIVE (SSE)' : 'LIVE (POLL)'}
+                  </span>
                 ) : (
-                  <span className="bg-red-500/10 text-red-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-red-500/20 animate-pulse">DISCONNECT</span>
+                  <span className="bg-red-500/10 text-red-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-red-500/20 animate-pulse uppercase tracking-widest">DISCONNECT</span>
                 )}
               </div>
               <p className="text-[10px] text-slate-400">Đấu trường Cờ Tướng Tương Tác mạng xã hội • Đạo Cụ Quà Tặng</p>

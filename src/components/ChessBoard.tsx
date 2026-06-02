@@ -235,17 +235,12 @@ export default function ChessBoard({
     const filename = pieceFileNames[key] || 'tuongdo.png';
     const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/';
     
-    // Check if the user is using the default assets folders. If so, prefer the pre-bundled local files.
-    const isDefaultBaseUrl = !styleSettings.pieceImageUrlBase || 
-      styleSettings.pieceImageUrlBase.trim() === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/' ||
-      styleSettings.pieceImageUrlBase.trim() === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/';
-    
-    const localImg = localPieceImages[key];
-    const imageUrl = (isDefaultBaseUrl && localImg) ? localImg : `${baseUrl}${filename}`;
+    // Attempt to load the piece image from the configured base directory URL
+    const imageUrl = `${baseUrl}${filename}`;
 
     const hasFailed = failedImages[imageUrl];
     if (hasFailed) {
-      return renderCssPiece(p, isSel, true);
+      return renderCssPiece(p, isSel, false); // Keep Chinese & Vietnamese text visible on fallback!
     }
 
     return (
