@@ -301,12 +301,33 @@ app.post("/api/match/move", (req, res) => {
     return res.status(400).json({ error: "Trận đấu đã kết thúc!" });
   }
 
+  // Auto-populate active players with default CPU/mock profiles if empty
+  // This guarantees immediate interactivity/playability without requiring full queue registration
+  if (!state.activePlayers.red) {
+    state.activePlayers.red = {
+      username: "co_thu_do",
+      nickname: "Lão Kỳ Thủ Đỏ 🔴",
+      avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=CpuRed",
+      color: 'red',
+      timeLeft: state.settings.turnTimeLimit,
+      connected: true,
+      score: 0
+    };
+  }
+  if (!state.activePlayers.black) {
+    state.activePlayers.black = {
+      username: "co_thu_den",
+      nickname: "Cao Thủ Bóng Đêm ⚫",
+      avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=CpuBlack",
+      color: 'black',
+      timeLeft: state.settings.turnTimeLimit,
+      connected: true,
+      score: 0
+    };
+  }
+
   const redPlayer = state.activePlayers.red;
   const blackPlayer = state.activePlayers.black;
-
-  if (!redPlayer || !blackPlayer) {
-    return res.status(400).json({ error: "Chưa đủ 2 kỳ thủ tham gia thi đấu!" });
-  }
 
   // Determine active color
   const activeColor = state.turn;

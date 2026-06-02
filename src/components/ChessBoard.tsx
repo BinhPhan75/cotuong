@@ -254,7 +254,7 @@ export default function ChessBoard({
             height: `${styleSettings.pieceScale}%`,
           }}
           className={`
-            relative rounded-full flex items-center justify-center transform active:scale-95 transition-all duration-150 aspect-square
+            relative rounded-full overflow-hidden flex items-center justify-center transform active:scale-95 transition-all duration-150 aspect-square shadow-md border border-amber-950/20 bg-amber-50
             ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
           `}
         >
@@ -262,7 +262,7 @@ export default function ChessBoard({
             src={localImg}
             referrerPolicy="no-referrer"
             alt={p.nameVi}
-            className="w-full h-full object-contain pointer-events-none select-none"
+            className="w-full h-full object-cover rounded-full pointer-events-none select-none"
             onError={() => {
               console.warn(`Failed to load backup local piece image: ${localImg}. Recording failure.`);
               setFailedImages(prev => ({ ...prev, [localImg]: true }));
@@ -279,7 +279,7 @@ export default function ChessBoard({
           height: `${styleSettings.pieceScale}%`,
         }}
         className={`
-          relative rounded-full flex items-center justify-center transform active:scale-95 transition-all duration-150 aspect-square
+          relative rounded-full overflow-hidden flex items-center justify-center transform active:scale-95 transition-all duration-150 aspect-square shadow-md border border-amber-950/20 bg-amber-50
           ${isSel ? 'ring-4 ring-offset-2 ring-emerald-500 scale-110 z-20 shadow-xl' : 'hover:scale-105'}
         `}
       >
@@ -287,7 +287,7 @@ export default function ChessBoard({
           src={imageUrl}
           referrerPolicy="no-referrer"
           alt={p.nameVi}
-          className="w-full h-full object-contain pointer-events-none select-none"
+          className="w-full h-full object-cover rounded-full pointer-events-none select-none"
           onError={() => {
             console.warn(`Failed to load piece image: ${imageUrl}. Recording failure.`);
             setFailedImages(prev => ({ ...prev, [imageUrl]: true }));

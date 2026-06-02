@@ -40,7 +40,7 @@ export default function App() {
   const [sessionToken, setSessionToken] = useState('');
   
   // Assigned player perspective for testing/acting of moves
-  const [currentUserColor, setCurrentUserColor] = useState<BoardColor | null>(null);
+  const [currentUserColor, setCurrentUserColor] = useState<BoardColor | null>('red');
   const [usernameInput, setUsernameInput] = useState('');
   const [isSelfVerified, setIsSelfVerified] = useState(false);
 
@@ -280,10 +280,10 @@ export default function App() {
 
     // Determine current user acting name
     let actingUser = "";
-    if (currentUserColor === 'red' && gameState.activePlayers.red) {
-      actingUser = gameState.activePlayers.red.username;
-    } else if (currentUserColor === 'black' && gameState.activePlayers.black) {
-      actingUser = gameState.activePlayers.black.username;
+    if (currentUserColor === 'red') {
+      actingUser = gameState.activePlayers.red?.username || "co_thu_do";
+    } else if (currentUserColor === 'black') {
+      actingUser = gameState.activePlayers.black?.username || "co_thu_den";
     } else if (gameState.settings.freeMoveMode) {
       // Admin or developer free moving - bypass restrictions utilizing current turn's active name
       actingUser = gameState.turn === 'red' 
