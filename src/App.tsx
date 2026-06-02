@@ -123,7 +123,7 @@ export default function App() {
     }
     setSessionToken(token);
 
-    // Load custom styles from localStorage
+        // Load custom styles from localStorage
     const savedStyles = localStorage.getItem('xiangqi_board_style_settings');
     if (savedStyles) {
       try {
@@ -136,6 +136,12 @@ export default function App() {
         }
         if (parsed.boardImageUrl && parsed.boardImageUrl.includes('/main/assets/')) {
           parsed.boardImageUrl = parsed.boardImageUrl.replace('/main/assets/', '/main/src/assets/');
+          migrated = true;
+        }
+
+        // Force/Automatic fallback to individual style mode to enable original Github raw images representation
+        if (parsed.pieceStyleMode !== 'individual') {
+          parsed.pieceStyleMode = 'individual';
           migrated = true;
         }
 
