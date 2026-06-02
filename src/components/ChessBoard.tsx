@@ -182,7 +182,7 @@ export default function ChessBoard({
   const renderPieceIndividual = (p: Piece, isSel: boolean) => {
     const key = `${p.color}-${p.type}`;
     const filename = pieceFileNames[key] || 'tuongdo.png';
-    const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/';
+    const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/';
     const imageUrl = `${baseUrl}${filename}`;
 
     const hasFailed = failedImages[imageUrl];

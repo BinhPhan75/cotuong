@@ -67,8 +67,8 @@ export default function App() {
       P: 6
     },
     pieceStyleMode: 'individual',
-    pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/',
-    boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/bancotuong.png'
+    pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/',
+    boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png'
   });
 
   const updateBoardStyleSettings = (updater: (prev: BoardStyleSettings) => BoardStyleSettings) => {
@@ -125,6 +125,13 @@ export default function App() {
     if (savedStyles) {
       try {
         const parsed = JSON.parse(savedStyles);
+        // Automatic migration from old assets path to src/assets
+        if (parsed.pieceImageUrlBase === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/') {
+          parsed.pieceImageUrlBase = 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/';
+        }
+        if (parsed.boardImageUrl === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/bancotuong.png') {
+          parsed.boardImageUrl = 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png';
+        }
         setBoardStyleSettings(prev => ({ ...prev, ...parsed }));
       } catch (e) {
         console.error("Failed to parse saved board styles:", e);
@@ -730,7 +737,7 @@ export default function App() {
                             placeholder="https://raw.githubusercontent.com/.../bancotuong.png"
                           />
                           <span className="text-[11px] text-slate-400 block leading-normal mt-1">
-                            Mặc định liên kết trực tiếp để tránh lỗi không hiển thị bàn cờ ở webgame! Mẹo: Có thể dùng <code className="bg-slate-950 px-1 py-0.5 rounded text-emerald-400">https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/bancotuong.png</code>
+                            Mặc định liên kết trực tiếp để tránh lỗi không hiển thị bàn cờ ở webgame! Mẹo: Có thể dùng <code className="bg-slate-950 px-1 py-0.5 rounded text-emerald-400">https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png</code>
                           </span>
                         </div>
                       )}
@@ -1052,8 +1059,8 @@ export default function App() {
                               P: 6
                             },
                             pieceStyleMode: 'individual',
-                            pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/',
-                            boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/bancotuong.png'
+                            pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/',
+                            boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png'
                           }));
                         }}
                         className="px-2.5 py-1 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded transition-colors font-medium font-mono"
