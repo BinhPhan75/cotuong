@@ -375,8 +375,8 @@ export default function ChessBoard({
         </div>
       )}
 
-      {/* Grid Canvas Lines Layer (drawn on top of background image if enabled or if board image is off) */}
-      {(styleSettings.showSvgGrid || !styleSettings.useBoardImage) && (
+      {/* Grid Canvas Lines Layer (drawn only if we are NOT using a board image, to avoid duplicate/blurry layers) */}
+      {(styleSettings.showSvgGrid && !styleSettings.useBoardImage) && (
         <div 
           className="absolute pointer-events-none border border-stone-800/60"
           style={boardCanvasStyle}

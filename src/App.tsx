@@ -437,11 +437,11 @@ export default function App() {
   // Let user key in their custom TikTok ID so that when they are selected Red/Black, they can move directly!
   const claimActiveRole = (color: BoardColor) => {
     const player = gameState.activePlayers[color];
+    setCurrentUserColor(color);
     if (player) {
-      setCurrentUserColor(color);
       addLocalSystemMessage(`🎨 Bạn đã nhập vai làm Kỳ thủ @${player.username} (Phe ${color === 'red' ? 'ĐỎ' : 'ĐEN'}) để thi đấu & di chuyển quân!`);
     } else {
-      triggerError(`Không có kỳ thủ nào chiếm vị thế phe ${color === 'red' ? 'ĐỎ' : 'ĐEN'} để nhập vai!`);
+      addLocalSystemMessage(`🎨 Bạn đã chọn vai Kỳ thủ ${color === 'red' ? 'ĐỎ' : 'ĐEN'} (Ở trạng thái Chưa có kỳ thủ đấu thực tế, sẽ dùng thông tin mẫu) để thi đấu!`);
     }
   };
 
@@ -1164,7 +1164,7 @@ export default function App() {
                     id="claim-red-role-btn"
                     type="button"
                     onClick={() => claimActiveRole('red')}
-                    className={`px-3 py-2 text-xs font-bold rounded-lg transition-all ${currentUserColor === 'red' ? 'bg-red-6500 text-white border-2 border-red-500' : 'bg-slate-950 border border-slate-850 hover:bg-slate-800 text-red-400'}`}
+                    className={`px-3 py-2 text-xs font-bold rounded-lg transition-all ${currentUserColor === 'red' ? 'bg-red-600 text-white border-2 border-red-500' : 'bg-slate-950 border border-slate-850 hover:bg-slate-800 text-red-400'}`}
                   >
                     🔴 Chơi Đăng Vai ĐỎ
                   </button>
