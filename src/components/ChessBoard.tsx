@@ -140,7 +140,7 @@ export default function ChessBoard({
     right: `${styleSettings.paddingRight}px`,
   };
 
-  const renderCssPiece = (p: Piece, isSel: boolean) => {
+  const renderCssPiece = (p: Piece, isSel: boolean, hideText: boolean = false) => {
     return (
       <div
         className={`
@@ -154,20 +154,24 @@ export default function ChessBoard({
         {/* Ring-inner accent */}
         <div className={`absolute inset-[2px] rounded-full border border-dashed ${p.color === 'red' ? 'border-red-300' : 'border-stone-400'}`} />
 
-        {/* Chinese glyph label */}
-        <span className="text-xl md:text-2xl font-bold font-serif leading-none tracking-tight select-none">
-          {p.label}
-        </span>
+        {!hideText && (
+          <>
+            {/* Chinese glyph label */}
+            <span className="text-xl md:text-2xl font-bold font-serif leading-none tracking-tight select-none">
+              {p.label}
+            </span>
 
-        {/* Vietnamese sub-label */}
-        <span 
-          className={`
-            text-[8px] md:text-[9px] -mt-0.5 leading-none font-medium select-none uppercase tracking-tighter
-            ${p.color === 'red' ? 'text-red-500' : 'text-stone-500'}
-          `}
-        >
-          {p.nameVi}
-        </span>
+            {/* Vietnamese sub-label */}
+            <span 
+              className={`
+                text-[8px] md:text-[9px] -mt-0.5 leading-none font-medium select-none uppercase tracking-tighter
+                ${p.color === 'red' ? 'text-red-500' : 'text-stone-500'}
+              `}
+            >
+              {p.nameVi}
+            </span>
+          </>
+        )}
 
         {/* Quick indicator if is King */}
         {p.type === 'K' && (
@@ -187,7 +191,7 @@ export default function ChessBoard({
 
     const hasFailed = failedImages[imageUrl];
     if (hasFailed) {
-      return renderCssPiece(p, isSel);
+      return renderCssPiece(p, isSel, true);
     }
 
     return (

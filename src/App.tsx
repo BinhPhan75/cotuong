@@ -126,11 +126,17 @@ export default function App() {
       try {
         const parsed = JSON.parse(savedStyles);
         // Automatic migration from old assets path to src/assets
-        if (parsed.pieceImageUrlBase === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/') {
-          parsed.pieceImageUrlBase = 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/';
+        let migrated = false;
+        if (parsed.pieceImageUrlBase && parsed.pieceImageUrlBase.includes('/main/assets/')) {
+          parsed.pieceImageUrlBase = parsed.pieceImageUrlBase.replace('/main/assets/', '/main/src/assets/');
+          migrated = true;
         }
-        if (parsed.boardImageUrl === 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/assets/bancotuong.png') {
-          parsed.boardImageUrl = 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png';
+        if (parsed.boardImageUrl && parsed.boardImageUrl.includes('/main/assets/')) {
+          parsed.boardImageUrl = parsed.boardImageUrl.replace('/main/assets/', '/main/src/assets/');
+          migrated = true;
+        }
+        if (migrated) {
+          localStorage.setItem('xiangqi_board_style_settings', JSON.stringify(parsed));
         }
         setBoardStyleSettings(prev => ({ ...prev, ...parsed }));
       } catch (e) {
