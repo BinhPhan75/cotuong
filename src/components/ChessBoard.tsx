@@ -127,7 +127,7 @@ export default function ChessBoard({
     const rowIdx = p.color === 'red' ? styleSettings.redRow : styleSettings.blackRow;
 
     const widthMult = styleSettings.spriteWidthMultiplier ?? 700;
-    const rowHeightRatio = styleSettings.spriteRowHeightRatio ?? 150.5;
+    const rowHeightRatio = styleSettings.spriteRowHeightRatio ?? 100;
 
     return (
       <div

@@ -56,7 +56,7 @@ export default function App() {
     redRow: 0,
     blackRow: 1,
     spriteWidthMultiplier: 700,
-    spriteRowHeightRatio: 150.5,
+    spriteRowHeightRatio: 100,
     spriteOrder: {
       K: 0,
       A: 1,
@@ -665,7 +665,7 @@ export default function App() {
                                     maxWidth: 'none',
                                     height: 'auto',
                                     left: `-${i * 100}%`,
-                                    top: `-${0 * (boardStyleSettings.spriteRowHeightRatio ?? 150.5)}%`,
+                                    top: `-${0 * (boardStyleSettings.spriteRowHeightRatio ?? 100)}%`,
                                   }}
                                   className="pointer-events-none select-none"
                                 />
@@ -684,7 +684,7 @@ export default function App() {
                                     maxWidth: 'none',
                                     height: 'auto',
                                     left: `-${i * 100}%`,
-                                    top: `-${1 * (boardStyleSettings.spriteRowHeightRatio ?? 150.5)}%`,
+                                    top: `-${1 * (boardStyleSettings.spriteRowHeightRatio ?? 100)}%`,
                                   }}
                                   className="pointer-events-none select-none"
                                 />
@@ -779,6 +779,51 @@ export default function App() {
                           />
                         </div>
 
+                        {/* Preset templates for quick scaling */}
+                        {boardStyleSettings.useSpritePieces && (
+                          <div className="md:col-span-2 space-y-2 p-3 bg-emerald-950/20 rounded-xl border border-emerald-500/20">
+                            <span className="text-[10px] text-emerald-400 block font-semibold uppercase tracking-wider font-sans">
+                              🎯 CHỌN NHANH MẪU CẮT ẢNH QUÂN CỜ (PRESETS):
+                            </span>
+                            <div className="flex flex-wrap gap-2 font-sans">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateBoardStyleSettings(prev => ({
+                                    ...prev,
+                                    spriteWidthMultiplier: 700,
+                                    spriteRowHeightRatio: 100,
+                                  }));
+                                }}
+                                className={`px-2.5 py-1.5 text-[11px] rounded font-medium transition-all ${
+                                  boardStyleSettings.spriteRowHeightRatio === 100
+                                    ? 'bg-emerald-600 text-white shadow-md'
+                                    : 'bg-slate-900 text-slate-300 hover:bg-slate-850 hover:text-white'
+                                }`}
+                              >
+                                🟢 Ảnh Sạch mới (100% - Không chữ phụ)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateBoardStyleSettings(prev => ({
+                                    ...prev,
+                                    spriteWidthMultiplier: 700,
+                                    spriteRowHeightRatio: 150.5,
+                                  }));
+                                }}
+                                className={`px-2.5 py-1.5 text-[11px] rounded font-medium transition-all ${
+                                  boardStyleSettings.spriteRowHeightRatio === 150.5
+                                    ? 'bg-emerald-600 text-white shadow-md'
+                                    : 'bg-slate-900 text-slate-300 hover:bg-slate-850 hover:text-white'
+                                }`}
+                              >
+                                🟡 Ảnh Cũ (150.5% - Có chữ tiếng Việt phụ)
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Sprite Width Multiplier */}
                         {boardStyleSettings.useSpritePieces && (
                           <div className="space-y-1">
@@ -800,17 +845,17 @@ export default function App() {
 
                         {/* Sprite Row Height Ratio */}
                         {boardStyleSettings.useSpritePieces && (
-                          <div className="space-y-1 md:col-span-2">
+                          <div className="space-y-1">
                             <div className="flex justify-between font-mono text-[10px] text-slate-400">
                               <span>Tỷ lệ Di chuyển Dòng (Row Height Ratio)</span>
-                              <span className="text-emerald-400 font-bold">{boardStyleSettings.spriteRowHeightRatio ?? 150.5}%</span>
+                              <span className="text-emerald-400 font-bold">{boardStyleSettings.spriteRowHeightRatio ?? 100}%</span>
                             </div>
                             <input
                               type="range"
-                              min="120"
+                              min="90"
                               max="180"
                               step="0.5"
-                              value={boardStyleSettings.spriteRowHeightRatio ?? 150.5}
+                              value={boardStyleSettings.spriteRowHeightRatio ?? 100}
                               onChange={(e) => updateBoardStyleSettings(prev => ({ ...prev, spriteRowHeightRatio: parseFloat(e.target.value) }))}
                               className="w-full accent-emerald-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
                             />
@@ -901,7 +946,7 @@ export default function App() {
                             redRow: 0,
                             blackRow: 1,
                             spriteWidthMultiplier: 700,
-                            spriteRowHeightRatio: 150.5,
+                            spriteRowHeightRatio: 100,
                             spriteOrder: {
                               K: 0,
                               A: 1,
