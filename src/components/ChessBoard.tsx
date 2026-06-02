@@ -233,7 +233,7 @@ export default function ChessBoard({
   const renderPieceIndividual = (p: Piece, isSel: boolean) => {
     const key = `${p.color}-${p.type}`;
     const filename = pieceFileNames[key] || 'tuongdo.png';
-    const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/QLNXT/main/src/assets/';
+    const baseUrl = styleSettings.pieceImageUrlBase ? styleSettings.pieceImageUrlBase.trim() : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/';
     
     // Attempt to load the raw GitHub URL directly as first priority
     const imageUrl = `${baseUrl}${filename}`;
@@ -336,20 +336,28 @@ export default function ChessBoard({
   // Prefer the direct boardImageUrl from settings (or fallback default raw.githubusercontent.com path)
   const boardImageUrlToUse = styleSettings.boardImageUrl && styleSettings.boardImageUrl.trim() !== '' 
     ? styleSettings.boardImageUrl.trim() 
-    : 'https://raw.githubusercontent.com/BinhPhan75/QLNXT/main/src/assets/bancotuong.png';
+    : 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png';
 
   return (
     <div 
       className="relative w-full aspect-[9/10] rounded-2xl shadow-2xl border-4 border-amber-800 selection:bg-transparent overflow-hidden"
       style={{
-        backgroundImage: styleSettings.useBoardImage 
-          ? `url(${boardImageUrlToUse}), url(${bancotuong})` 
-          : 'none',
-        backgroundSize: '100% 100%',
-        backgroundRepeat: 'no-repeat',
         backgroundColor: '#f7eedc'
       }}
     >
+      {/* 🗺️ Board Image Background Layer with dynamic image fallback */}
+      {styleSettings.useBoardImage && (
+        <img 
+          src={boardImageUrlToUse}
+          referrerPolicy="no-referrer"
+          className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none z-0"
+          alt="Bàn cờ tướng"
+          onError={(e) => {
+            console.warn(`Failed to load board image URL: ${boardImageUrlToUse}. Falling back to default backup.`);
+            e.currentTarget.src = bancotuong;
+          }}
+        />
+      )}
       
       {/* 🌫️ BLIND STATE OVERLAY */}
       {isBlind && (

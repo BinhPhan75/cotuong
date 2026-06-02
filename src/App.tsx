@@ -68,8 +68,8 @@ export default function App() {
       P: 6
     },
     pieceStyleMode: 'individual',
-    pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/QLNXT/main/src/assets/',
-    boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/QLNXT/main/src/assets/bancotuong.png'
+    pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/',
+    boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png'
   });
 
   const updateBoardStyleSettings = (updater: (prev: BoardStyleSettings) => BoardStyleSettings) => {
@@ -139,13 +139,13 @@ export default function App() {
           migrated = true;
         }
 
-        // Migrate BinhPhan75/cotuong repo to the new BinhPhan75/QLNXT repo path
-        if (parsed.pieceImageUrlBase && parsed.pieceImageUrlBase.includes('BinhPhan75/cotuong')) {
-          parsed.pieceImageUrlBase = parsed.pieceImageUrlBase.replace('BinhPhan75/cotuong', 'BinhPhan75/QLNXT');
+        // Migrate BinhPhan75/QLNXT repo back to BinhPhan75/cotuong repo path
+        if (parsed.pieceImageUrlBase && parsed.pieceImageUrlBase.includes('BinhPhan75/QLNXT')) {
+          parsed.pieceImageUrlBase = parsed.pieceImageUrlBase.replace('BinhPhan75/QLNXT', 'BinhPhan75/cotuong');
           migrated = true;
         }
-        if (parsed.boardImageUrl && parsed.boardImageUrl.includes('BinhPhan75/cotuong')) {
-          parsed.boardImageUrl = parsed.boardImageUrl.replace('BinhPhan75/cotuong', 'BinhPhan75/QLNXT');
+        if (parsed.boardImageUrl && parsed.boardImageUrl.includes('BinhPhan75/QLNXT')) {
+          parsed.boardImageUrl = parsed.boardImageUrl.replace('BinhPhan75/QLNXT', 'BinhPhan75/cotuong');
           migrated = true;
         }
 
@@ -807,7 +807,7 @@ export default function App() {
                             placeholder="https://raw.githubusercontent.com/.../bancotuong.png"
                           />
                           <span className="text-[11px] text-slate-400 block leading-normal mt-1">
-                            Mặc định liên kết trực tiếp để tránh lỗi không hiển thị bàn cờ ở webgame! Mẹo: Có thể dùng <code className="bg-slate-950 px-1 py-0.5 rounded text-emerald-400">https://raw.githubusercontent.com/BinhPhan75/QLNXT/main/src/assets/bancotuong.png</code>
+                            Mặc định liên kết trực tiếp để tránh lỗi không hiển thị bàn cờ ở webgame! Mẹo: Có thể dùng <code className="bg-slate-950 px-1 py-0.5 rounded text-emerald-400">https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png</code>
                           </span>
                         </div>
                       )}
@@ -1129,8 +1129,8 @@ export default function App() {
                               P: 6
                             },
                             pieceStyleMode: 'individual',
-                            pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/QLNXT/main/src/assets/',
-                            boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/QLNXT/main/src/assets/bancotuong.png'
+                            pieceImageUrlBase: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/',
+                            boardImageUrl: 'https://raw.githubusercontent.com/BinhPhan75/cotuong/main/src/assets/bancotuong.png'
                           }));
                         }}
                         className="px-2.5 py-1 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded transition-colors font-medium font-mono"
