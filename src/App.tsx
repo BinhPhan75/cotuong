@@ -111,6 +111,7 @@ export default function App() {
   const [adminTurnLimit, setAdminTurnLimit] = useState(30);
   const [adminAutoQueue, setAdminAutoQueue] = useState(true);
   const [adminFreeMove, setAdminFreeMove] = useState(false);
+  const [isSoloSandbox, setIsSoloSandbox] = useState(false);
 
   const boardAreaRef = useRef<HTMLDivElement>(null);
 
@@ -280,7 +281,12 @@ export default function App() {
 
     // Determine current user acting name
     let actingUser = "";
-    if (currentUserColor === 'red') {
+    if (isSoloSandbox) {
+      // Solo play controls both sides
+      actingUser = gameState.turn === 'red' 
+        ? gameState.activePlayers.red?.username || "co_thu_do"
+        : gameState.activePlayers.black?.username || "co_thu_den";
+    } else if (currentUserColor === 'red') {
       actingUser = gameState.activePlayers.red?.username || "co_thu_do";
     } else if (currentUserColor === 'black') {
       actingUser = gameState.activePlayers.black?.username || "co_thu_den";
@@ -343,6 +349,37 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username })
     });
+  };
+
+  // Quick start a test match / sandbox
+  const handleQuickStartMatch = async (mode: 'pvp' | 'vs_cpu') => {
+    setIsLoading(true);
+    setApiError(null);
+    try {
+      const res = await fetch('/api/admin/quick-start-test-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+      });
+      if (res.ok) {
+        if (mode === 'vs_cpu') {
+          setIsSoloSandbox(false);
+          setCurrentUserColor('red');
+          addLocalSystemMessage("🤖 Thử nghiệm thành công: Chế độ Đấu với Máy (CPU) đã kích hoạt! Hãy bắt đầu đi quân ĐỎ.");
+        } else {
+          setIsSoloSandbox(true);
+          setCurrentUserColor(null);
+          addLocalSystemMessage("👥 Thử nghiệm thành công: Chế độ Tự Tập Solo đã kích hoạt! Bạn có thể đi cho cả hai bên ĐỎ và ĐEN.");
+        }
+      } else {
+        const errData = await res.json();
+        triggerError(errData.error || "Không thể khởi động chế độ chơi thử!");
+      }
+    } catch (err: any) {
+      triggerError("Lỗi kết nối sảnh đấu thử nghiệm: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Simulated live event (Chat / like / gift)
@@ -542,7 +579,78 @@ export default function App() {
             
             {/* LÈFT ZONE - PLAYING BOARD (60% equivalent on wide screen) */}
             <div className="lg:col-span-7 flex flex-col space-y-4">
-              
+
+              {/* 🛠️ CHẾ ĐỘ THỬ NGHIỆM / CHƠI THỬ NHANH (SANDBOX PLAYGROUND) */}
+              <div className="bg-slate-900 border border-indigo-500/35 rounded-2xl p-4 shadow-xl space-y-3 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-rose-500/5 rounded-full blur-xl pointer-events-none" />
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400 animate-spin" style={{ animationDuration: '4s' }} />
+                    <h3 className="text-xs font-display font-black text-slate-100 uppercase tracking-wider">
+                      Trình Diễn & Thử Nghiệm Game Cực Nhanh (Play Testing Toolbar)
+                    </h3>
+                  </div>
+                  {isSoloSandbox ? (
+                    <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-bold uppercase font-mono tracking-wide animate-pulse">
+                      Solo Sandbox
+                    </span>
+                  ) : gameState.settings.cpuMode ? (
+                    <span className="text-[10px] bg-red-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded font-bold uppercase font-mono tracking-wide animate-pulse">
+                      Đấu Với Máy (CPU)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-bold uppercase font-mono tracking-wide">
+                      Chế Độ PK Thường
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Để bạn <strong className="text-indigo-300">trải nghiệm bàn cờ ngay lập tức</strong> mà không cần tài khoản TikTok live hay chuẩn bị 2 điện thoại, hãy chọn một trong hai chế độ chơi nhanh dưới đây:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-1">
+                  <button
+                    id="quick-vs-cpu-btn"
+                    onClick={() => handleQuickStartMatch('vs_cpu')}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border ${
+                      !isSoloSandbox && gameState.settings.cpuMode
+                        ? 'bg-rose-600 text-white border-rose-500 shadow-md ring-2 ring-rose-500/20 scale-102'
+                        : 'bg-slate-950 hover:bg-slate-850 text-rose-300 hover:text-rose-200 border-rose-900/35 hover:border-rose-800'
+                    }`}
+                  >
+                    <span>🤖 ĐẤU VỚI MÁY (Vs CPU)</span>
+                  </button>
+
+                  <button
+                    id="quick-solo-sandbox-btn"
+                    onClick={() => handleQuickStartMatch('pvp')}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border ${
+                      isSoloSandbox
+                        ? 'bg-indigo-600 text-white border-indigo-500 shadow-md ring-2 ring-indigo-500/20 scale-102'
+                        : 'bg-slate-950 hover:bg-slate-850 text-indigo-300 hover:text-indigo-200 border-indigo-900/35 hover:border-indigo-800'
+                    }`}
+                  >
+                    <span>👥 TỰ CHƠI SOLO (Solo Sandbox)</span>
+                  </button>
+                </div>
+
+                <div className="text-[10px] text-slate-500 flex items-center gap-1 bg-slate-950/40 p-2 rounded-lg border border-slate-850/60 leading-normal">
+                  <Info className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                  <div>
+                    {isSoloSandbox ? (
+                      <span><strong>Hướng dẫn:</strong> Bàn cờ đang ở trạng thái tập dượt. Bạn có thể tự mình kéo cờ cho cả 2 bên ĐỎ và ĐEN luân phiên để thử quân.</span>
+                    ) : gameState.settings.cpuMode ? (
+                      <span><strong>Hướng dẫn:</strong> Bạn trong vai ĐỎ. Sau khi bạn đi, <strong className="text-rose-400">Máy đối thủ (ĐEN)</strong> sẽ tự động tính toán nước đi thông minh và phản công sau 1.2s!</span>
+                    ) : (
+                      <span><strong>Hướng dẫn:</strong> Chế độ luân chuẩn từ hàng chờ livestream. Click <strong>Đấu với Máy</strong> hoặc <strong>Solo Sandbox</strong> ở trên để thử nghiệm bàn cờ ngay.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* STATUS HEADER (Player tags + countdown ticks) */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row gap-3 items-center justify-between shadow-lg">
                 

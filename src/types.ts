@@ -68,6 +68,7 @@ export interface GameSettings {
   turnTimeLimit: number; // e.g. 30, 45, 60 seconds
   automaticQueue: boolean;
   freeMoveMode: boolean; // Overrule standard chess movement constraint for demo/mentoring
+  cpuMode?: boolean; // Automated computer opponent
 }
 
 export interface GameState {

@@ -53,6 +53,7 @@ let state: GameState = {
     turnTimeLimit: 30,
     automaticQueue: true,
     freeMoveMode: false,
+    cpuMode: false,
   },
   queue: [
     { id: "q1", username: "quan_co_viet", nickname: "Quân Cờ Việt 🇻🇳", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Jack", joinedAt: Date.now() - 600000, verified: true },
@@ -293,6 +294,99 @@ app.post("/api/queue/request-code", (req, res) => {
   res.json({ code });
 });
 
+// Automated computer opponent logic for Black side
+function makeCpuMove() {
+  if (state.winner || state.turn !== 'black') return;
+  
+  const moves: { from: GridPosition; to: GridPosition; score: number }[] = [];
+  const pieceValues: Record<string, number> = {
+    'K': 1000,
+    'R': 100,
+    'C': 45,
+    'H': 40,
+    'E': 20,
+    'A': 20,
+    'P': 10
+  };
+
+  // Find all valid moves for Black
+  for (let r = 0; r < 10; r++) {
+    for (let c = 0; c < 9; c++) {
+      const piece = state.board[r][c];
+      if (piece && piece.color === 'black') {
+        // Evaluate all target destinations
+        for (let tr = 0; tr < 10; tr++) {
+          for (let tc = 0; tc < 9; tc++) {
+            const from = { r, c };
+            const to = { r: tr, c: tc };
+            
+            const check = isValidXiangqiMove(from, to, state.board, false);
+            if (check.isValid) {
+              // Simulate move on draft board to ensure it is fully legal (doesn't leave king in check)
+              const tempBoard = state.board.map(row => [...row]);
+              tempBoard[to.r][to.c] = tempBoard[from.r][from.c];
+              tempBoard[from.r][from.c] = null;
+              if (!isKingInCheck('black', tempBoard)) {
+                const targetPiece = state.board[tr][tc];
+                let score = 0;
+                if (targetPiece) {
+                  score = pieceValues[targetPiece.type] || 10; // Capture priority
+                }
+                score += Math.random() * 2; // Small randomized selection
+                moves.push({ from, to, score });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (moves.length === 0) {
+    // Checkmate or stalemate triggers win for Red
+    state.winner = 'red';
+    addSystemMessage("🏆 Trận đấu kết thúc! Máy (Đen) bị dồn vào thế Bí (Chiếu bí hoặc hết nước đi). Phe ĐỎ chiến thắng! 🎉", 'gift');
+    resolveGameStats('red');
+    broadcastState();
+    return;
+  }
+
+  // Sort by score descending and select Best move
+  moves.sort((a, b) => b.score - a.score);
+  const bestMove = moves[0];
+
+  const piece = state.board[bestMove.from.r][bestMove.from.c];
+  if (piece) {
+    boardHistory.push(state.board.map(row => [...row]));
+    turnHistory.push(state.turn);
+
+    const targetPiece = state.board[bestMove.to.r][bestMove.to.c];
+    state.board[bestMove.to.r][bestMove.to.c] = piece;
+    state.board[bestMove.from.r][bestMove.from.c] = null;
+    state.lastMove = { from: bestMove.from, to: bestMove.to, piece };
+
+    if (targetPiece) {
+      addSystemMessage(`🤖 [Máy CPU ⚫] đã ĂN quân ${targetPiece.nameVi} (${targetPiece.label}) tại (${bestMove.to.r}, ${bestMove.to.c})!`, 'chat');
+    } else {
+      addSystemMessage(`🤖 [Máy CPU ⚫] đi quân ${piece.nameVi} (${bestMove.from.r}, ${bestMove.from.c}) ➔ (${bestMove.to.r}, ${bestMove.to.c})`, 'chat');
+    }
+
+    // Toggle turn back to Red
+    state.winner = null;
+    state.turn = 'red';
+    if (state.activePlayers.red) {
+      state.activePlayers.red.timeLeft = state.settings.turnTimeLimit;
+    }
+    
+    // Check if player Red is now in check
+    if (isKingInCheck('red', state.board)) {
+      addSystemMessage("⚠️ CẢNH BÁO: Tướng phe ĐỎ của bạn đang bị Máy chiếu tướng! Mau phòng ngự!", 'chat');
+    }
+
+    broadcastState();
+  }
+}
+
 // API: Move Piece
 app.post("/api/match/move", (req, res) => {
   const { from, to, username } = req.body as { from: GridPosition; to: GridPosition; username: string };
@@ -390,11 +484,20 @@ app.post("/api/match/move", (req, res) => {
 
     // Toggle turn
     state.turn = opponentColor;
+    
     // Reset timer
-    state.activePlayers[opponentColor]!.timeLeft = state.settings.turnTimeLimit;
+    if (state.activePlayers[opponentColor]) {
+      state.activePlayers[opponentColor]!.timeLeft = state.settings.turnTimeLimit;
+    }
   }
 
   broadcastState();
+
+  // If Black computer's turn and CPU mode is active, make CPU move after delay
+  if (state.settings.cpuMode && state.turn === 'black' && !state.winner) {
+    setTimeout(makeCpuMove, 1200);
+  }
+
   res.json({ success: true });
 });
 
@@ -536,6 +639,77 @@ app.post("/api/tiktok/simulate", (req, res) => {
   res.json({ success: true });
 });
 
+// API: Quick start sandbox or vs-cpu test match
+app.post("/api/admin/quick-start-test-match", (req, res) => {
+  const { mode } = req.body as { mode: 'pvp' | 'vs_cpu' };
+  
+  // 1. Reset Board
+  state.board = createInitialBoard();
+  state.turn = "red";
+  state.winner = null;
+  state.lastMove = null;
+  state.isBlindActive = { red: false, black: false };
+  boardHistory = [];
+  turnHistory = [];
+
+  // 2. Set mode settings
+  if (mode === 'vs_cpu') {
+    state.settings.cpuMode = true;
+    state.settings.freeMoveMode = false;
+    
+    state.activePlayers.red = {
+      username: "user_test",
+      nickname: "Bạn (Kỳ thủ Đỏ) 🔴",
+      avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=YouRed",
+      color: 'red',
+      timeLeft: state.settings.turnTimeLimit,
+      connected: true,
+      score: 0
+    };
+    state.activePlayers.black = {
+      username: "cpu_may",
+      nickname: "Máy CPU ⚫ (Khó)",
+      avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=CpuBlack",
+      color: 'black',
+      timeLeft: state.settings.turnTimeLimit,
+      connected: true,
+      score: 0
+    };
+    
+    addSystemMessage("🤖 Chế độ Đấu với Máy (CPU) đã được thiết lập thành công! Mời bạn khởi động bàn cờ bên ĐỎ.", 'system');
+  } else {
+    // PvP or Solo play
+    state.settings.cpuMode = false;
+    state.settings.freeMoveMode = false;
+    
+    state.activePlayers.red = {
+      username: "co_thu_do",
+      nickname: "Kỳ Thủ Đỏ 🔴",
+      avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=CpuRed",
+      color: 'red',
+      timeLeft: state.settings.turnTimeLimit,
+      connected: true,
+      score: 0
+    };
+    state.activePlayers.black = {
+      username: "co_thu_den",
+      nickname: "Kỳ Thủ Đen ⚫",
+      avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=CpuBlack",
+      color: 'black',
+      timeLeft: state.settings.turnTimeLimit,
+      connected: true,
+      score: 0
+    };
+
+    addSystemMessage("👥 Chế độ Chơi thử Tự Do PvP đã được thiết lập thành công! Bạn có thể tự đi cả 2 bên hoặc Đóng vai để chơi.", 'system');
+  }
+
+  addSystemMessage("⚡ Tình thế bàn cờ đã được phục hồi nguyên trạng ban đầu!");
+  
+  broadcastState();
+  res.json({ success: true, state });
+});
+
 // API: Admin Setup / Start Match manually
 app.post("/api/admin/start-match", (req, res) => {
   const { redUserId, blackUserId } = req.body;
@@ -667,12 +841,13 @@ app.post("/api/admin/declare-outcome", (req, res) => {
 
 // API: Admin Update settings
 app.post("/api/admin/settings", (req, res) => {
-  const { turnTimeLimit, automaticQueue, freeMoveMode } = req.body;
+  const { turnTimeLimit, automaticQueue, freeMoveMode, cpuMode } = req.body;
   if (typeof turnTimeLimit === "number") state.settings.turnTimeLimit = turnTimeLimit;
   if (typeof automaticQueue === "boolean") state.settings.automaticQueue = automaticQueue;
   if (typeof freeMoveMode === "boolean") state.settings.freeMoveMode = freeMoveMode;
+  if (typeof cpuMode === "boolean") state.settings.cpuMode = cpuMode;
 
-  addSystemMessage(`⚙️ Hệ thống cập nhật: Thời gian lượt = ${state.settings.turnTimeLimit}s | Tự động đổi hàng đợi = ${state.settings.automaticQueue ? 'BẬT' : 'TẮT'} | Chế độ đi tự do = ${state.settings.freeMoveMode ? 'BẬT' : 'TẮT'}`);
+  addSystemMessage(`⚙️ Hệ thống cập nhật: Thời gian lượt = ${state.settings.turnTimeLimit}s | Tự động đổi hàng đợi = ${state.settings.automaticQueue ? 'BẬT' : 'TẮT'} | Chế độ đi tự do = ${state.settings.freeMoveMode ? 'BẬT' : 'TẮT'} | Máy CPU = ${state.settings.cpuMode ? 'BẬT' : 'TẮT'}`);
   broadcastState();
   res.json({ success: true });
 });
